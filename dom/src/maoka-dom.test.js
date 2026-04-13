@@ -45,7 +45,22 @@ class FakeElement {
 	}
 
 	appendChild(child) {
-		this.children.push(child)
+		this.insertBefore(child, null)
+
+		return child
+	}
+
+	insertBefore(child, before) {
+		if (child.parentNode) child.parentNode.removeChild(child)
+
+		const index = before ? this.children.indexOf(before) : -1
+
+		if (index === -1) {
+			this.children.push(child)
+		} else {
+			this.children.splice(index, 0, child)
+		}
+
 		child.parentNode = this
 
 		return child
@@ -138,5 +153,157 @@ describe("maokaDom.render", () => {
 		expect(countButton.textContent).toBe("Count: 2")
 		expect(incButton.textContent).toBe("+")
 		expect(canceledFrames).toEqual([1])
+	})
+
+	test("diffs keyed children by moving, removing, and inserting DOM nodes", () => {
+		const scheduledFrames = []
+
+		globalThis.requestAnimationFrame = flush => {
+			scheduledFrames.push(flush)
+
+			return scheduledFrames.length
+		}
+		globalThis.cancelAnimationFrame = () => {}
+
+		const container = createContainer()
+		const renderCounts = new Map()
+		let items = [
+			{ id: "a", label: "A" },
+			{ id: "b", label: "B" },
+			{ id: "c", label: "C" },
+		]
+		let refresh
+		const Row = maoka.html.div(({ props$ }) => () => {
+			const { id, label } = props$()
+
+			renderCounts.set(id, (renderCounts.get(id) ?? 0) + 1)
+
+			return label
+		})
+		const List = maoka.create(({ refresh$ }) => {
+			refresh = refresh$
+
+			return () =>
+				items.map(item =>
+					Row(() => ({ key: item.id, id: item.id, label: item.label })),
+				)
+		})
+
+		render(container, List)
+
+		const [a, b, c] = container.children
+
+		expect(container.children.map(child => child.textContent)).toEqual(["A", "B", "C"])
+		expect(renderCounts).toEqual(
+			new Map([
+				["a", 1],
+				["b", 1],
+				["c", 1],
+			]),
+		)
+
+		items = [
+			{ id: "c", label: "C" },
+			{ id: "a", label: "A" },
+			{ id: "b", label: "B" },
+		]
+		refresh()
+		scheduledFrames.shift()()
+
+		expect(container.children).toEqual([c, a, b])
+		expect(renderCounts).toEqual(
+			new Map([
+				["a", 1],
+				["b", 1],
+				["c", 1],
+			]),
+		)
+
+		items = [
+			{ id: "c", label: "C" },
+			{ id: "a", label: "A" },
+		]
+		refresh()
+		scheduledFrames.shift()()
+
+		expect(container.children).toEqual([c, a])
+		expect(b.parentNode).toBe(null)
+		expect(renderCounts).toEqual(
+			new Map([
+				["a", 1],
+				["b", 1],
+				["c", 1],
+			]),
+		)
+
+		items = [
+			{ id: "c", label: "C" },
+			{ id: "d", label: "D" },
+			{ id: "a", label: "A" },
+		]
+		refresh()
+		scheduledFrames.shift()()
+
+		const d = container.children[1]
+
+		expect(container.children).toEqual([c, d, a])
+		expect(d).not.toBe(a)
+		expect(d).not.toBe(b)
+		expect(d).not.toBe(c)
+		expect(d.textContent).toBe("D")
+		expect(renderCounts).toEqual(
+			new Map([
+				["a", 1],
+				["b", 1],
+				["c", 1],
+				["d", 1],
+			]),
+		)
+	})
+
+	test("ignores empty conditional children in component lists", () => {
+		const scheduledFrames = []
+
+		globalThis.requestAnimationFrame = flush => {
+			scheduledFrames.push(flush)
+
+			return scheduledFrames.length
+		}
+		globalThis.cancelAnimationFrame = () => {}
+
+		const container = createContainer()
+		let visible = false
+		let refresh
+		const Label = maoka.html.div(({ props$ }) => () => props$().label)
+		const Example = maoka.create(({ refresh$, lifecycle }) => {
+			refresh = refresh$
+			lifecycle.onRefresh(() => true)
+
+			return () => [
+				Label(() => ({ key: "a", label: "A" })),
+				visible ? Label(() => ({ key: "b", label: "B" })) : undefined,
+				Label(() => ({ key: "c", label: "C" })),
+			]
+		})
+
+		render(container, Example)
+
+		const [a, c] = container.children
+
+		expect(container.textContent).toBe("")
+		expect(container.children.map(child => child.textContent)).toEqual(["A", "C"])
+
+		visible = true
+		refresh()
+		scheduledFrames.shift()()
+
+		const b = container.children[1]
+
+		expect(container.children).toEqual([a, b, c])
+		expect(container.children.map(child => child.textContent)).toEqual([
+			"A",
+			"B",
+			"C",
+		])
 	})
 })

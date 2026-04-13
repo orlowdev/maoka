@@ -1,6 +1,6 @@
 import maoka from "../../../index.js"
 
-export const Discounter = maoka.create(({ key, refresh$, lifecycle }) => {
+export const Discounter = maoka.create(({ refresh$ }) => {
 	let count = 0
 
 	const onClick = () => {
@@ -8,9 +8,11 @@ export const Discounter = maoka.create(({ key, refresh$, lifecycle }) => {
 		refresh$()
 	}
 
-	lifecycle.onRefresh(() => false)
-
-	return () => [Count(() => ({ count })), Discount(() => ({ onClick }))]
+	return () => [
+		Count(() => ({ key: 1, count })),
+		count < -10 ? Count(() => ({ key: 2, count: count - 10 })) : void 0,
+		Discount(() => ({ onClick })),
+	]
 })
 
 const Count = maoka.html.div(

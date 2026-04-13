@@ -33,7 +33,7 @@ export namespace Maoka {
 
 	type Refresh$ = () => void
 
-	type RefreshHandler = () => true | void
+	type RefreshHandler = () => boolean | void
 
 	type ErrorHandler = (error: Error) => void
 
@@ -67,6 +67,7 @@ export namespace Maoka {
 		children: Node<$Type, any>[]
 		createKey: () => Key
 		createValue: (tag: string) => $Type
+		mountNode: (node: Node<$Type, any>) => void
 		refreshNode: (node: Node<$Type, any>) => void
 		flushRefreshQueue: () => void
 	}
@@ -77,6 +78,12 @@ export namespace Maoka {
 		createKey?: () => Key
 		createValue: (tag: string) => $Type
 		refreshNode: (node: Node<$Type, any>) => void
+		insertNode?: (
+			parent: Node<$Type, any>,
+			node: Node<$Type, any>,
+			index: number,
+		) => void
+		removeNode?: (node: Node<$Type, any>) => void
 		scheduleRefresh?: (flush: () => void) => any
 		cancelRefresh?: (scheduledRefresh: any) => void
 	}

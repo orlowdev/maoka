@@ -20,13 +20,15 @@ export const render = (container, component, options = {}) => {
 		createKey: options.createKey,
 		createValue: tag => createElement(container.ownerDocument, tag),
 		refreshNode,
+		insertNode,
+		removeNode,
 		scheduleRefresh: scheduleAnimationFrame,
 		cancelRefresh: cancelAnimationFrameRefresh,
 	})
 	const parent = createRootNode(root, container)
 	const rootNode = instantiateComponent(component, root, parent)
 
-	applyTemplate(rootNode, rootNode.template)
+	root.mountNode(rootNode)
 
 	return root
 }
@@ -51,8 +53,25 @@ const cancelAnimationFrameRefresh = scheduledRefresh => {
 }
 
 const refreshNode = node => {
-	node.template = node.render()
-	applyTemplate(node, node.template)
+	node.value.textContent = node.template == null ? "" : String(node.template)
+}
+
+const insertNode = (parent, node, index) => {
+	if (node.value.parentNode !== parent.value && parent.value.children.length === 0) {
+		parent.value.textContent = ""
+	}
+
+	const beforeValue = parent.value.children[index] ?? null
+
+	if (beforeValue === node.value) return
+
+	parent.value.insertBefore(node.value, beforeValue)
+}
+
+const removeNode = node => {
+	if (node.value.parentNode) {
+		node.value.parentNode.removeChild(node.value)
+	}
 }
 
 const createElement = (document, tag) => {
@@ -85,72 +104,3 @@ const instantiateComponent = (component, root, parent) => {
 
 	return initializedComponent(root, parent)
 }
-
-const applyTemplate = (node, template) => {
-	if (Array.isArray(template)) {
-		applyComponentTemplates(node, template)
-
-		return
-	}
-
-	if (isComponent(template)) {
-		applyComponentTemplates(node, [template])
-
-		return
-	}
-
-	applyTextTemplate(node, template)
-}
-
-const applyComponentTemplates = (node, templates) => {
-	const components = templates.filter(isComponent)
-
-	if (components.length !== templates.length) {
-		applyTextTemplate(node, templates.join(""))
-
-		return
-	}
-
-	const previousChildren = [...node.children]
-	const nextChildren = []
-
-	node.value.textContent = ""
-
-	for (const [index, component] of components.entries()) {
-		const child = previousChildren[index] ?? instantiateComponent(component, node.root, node)
-
-		nextChildren.push(child)
-
-		if (child.value.parentNode !== node.value) {
-			node.value.appendChild(child.value)
-		}
-
-		if (!previousChildren[index]) {
-			applyTemplate(child, child.template)
-		}
-	}
-
-	for (const child of previousChildren.slice(components.length)) {
-		removeNodeValue(child)
-	}
-
-	node.children.length = 0
-	node.children.push(...nextChildren)
-}
-
-const applyTextTemplate = (node, template) => {
-	for (const child of node.children) {
-		removeNodeValue(child)
-	}
-
-	node.children.length = 0
-	node.value.textContent = template == null ? "" : String(template)
-}
-
-const removeNodeValue = node => {
-	if (node.value.parentNode) {
-		node.value.parentNode.removeChild(node.value)
-	}
-}
-
-const isComponent = template => typeof template === "function"

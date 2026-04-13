@@ -109,7 +109,7 @@ describe("createRoot", () => {
 		expect(refreshedNodes).toEqual([first, second])
 	})
 
-	test("refreshes children after a parent refresh", () => {
+	test("refreshes changed child after a parent refresh", () => {
 		const refreshedNodes = []
 		let childCount = 0
 		let grandchildCount = 0
@@ -123,6 +123,7 @@ describe("createRoot", () => {
 		const grandchild = createPropsNode("grandchild", () => ({ grandchildCount }))
 
 		parent.children.push(child)
+		parent.lifecycleHandlers.refresh.push(() => {})
 		child.children.push(grandchild)
 		childCount++
 		grandchildCount++
@@ -131,7 +132,7 @@ describe("createRoot", () => {
 		root.refreshNode(child)
 		root.flushRefreshQueue()
 
-		expect(refreshedNodes).toEqual([parent, child, grandchild])
+		expect(refreshedNodes).toEqual([child])
 	})
 
 	test("refreshes children when a parent skips its own renderer refresh", () => {
@@ -166,11 +167,12 @@ describe("createRoot", () => {
 		const child = createPropsNode("child", () => ({ count: 1 }))
 
 		parent.children.push(child)
+		parent.lifecycleHandlers.refresh.push(() => {})
 
 		root.refreshNode(parent)
 		root.flushRefreshQueue()
 
-		expect(refreshedNodes).toEqual([parent])
+		expect(refreshedNodes).toEqual([])
 	})
 
 	test("asks the renderer to refresh when any refresh handler returns true", () => {

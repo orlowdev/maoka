@@ -1,12 +1,17 @@
 import { HTML_TAGS, MATH_TAGS, SVG_TAGS } from "./maoka.constants.js"
 
+const COMPONENT_META = Symbol("maoka.component")
+const NODE_META = Symbol("maoka.node")
+
 /**
  * Creates a Maoka node.
  *
  * @type {Maoka.Create}
  */
-export const create = definition => props => (root, parent) =>
-	createBase(root, props, parent, definition, parent.value)
+export const create = definition => props =>
+	createComponent(props, (root, parent) =>
+		createBase(root, props, parent, definition, parent.value),
+	)
 
 /**
  * Creates a pure Maoka component. This component is pure in a sense that it
@@ -15,8 +20,25 @@ export const create = definition => props => (root, parent) =>
  *
  * @type {Maoka.Pure}
  */
-export const pure = (tag, definition) => props => (root, parent) =>
-	createBase(root, props, parent, definition, root.createValue(tag))
+export const pure = (tag, definition) => props =>
+	createComponent(props, (root, parent) =>
+		createBase(root, props, parent, definition, root.createValue(tag)),
+	)
+
+export const isComponent = value =>
+	typeof value === "function" && Boolean(value[COMPONENT_META])
+
+export const getComponentKey = component => {
+	const props = component[COMPONENT_META]?.props
+
+	if (!props) return undefined
+
+	return props()?.key
+}
+
+export const updateNodeComponent = (node, component) => {
+	node[NODE_META]?.updateProps(component[COMPONENT_META]?.props)
+}
 
 export const html = HTML_TAGS.reduce((acc, tag) => {
 	acc[tag] = definition => pure(tag, definition)
@@ -46,12 +68,13 @@ export const svg = SVG_TAGS.reduce((acc, tag) => {
 const createBase = (root, props, parent, definition, value) => {
 	let key = root.createKey()
 	let initialized = false
+	let propsSource = props
 
 	// TODO: implement props change detection logic
 	const props$ = () => {
-		if (!props) return { key }
+		if (!propsSource) return { key }
 
-		const extractedProps = props() ?? {}
+		const extractedProps = propsSource() ?? {}
 
 		if ("key" in extractedProps) {
 			key = extractedProps.key
@@ -95,6 +118,11 @@ const createBase = (root, props, parent, definition, value) => {
 			refresh: [],
 			error: [],
 		},
+		[NODE_META]: {
+			updateProps: nextProps => {
+				propsSource = nextProps
+			},
+		},
 	}
 
 	const params = {
@@ -123,4 +151,10 @@ const createBase = (root, props, parent, definition, value) => {
 	parent.children.push(node)
 
 	return node
+}
+
+const createComponent = (props, component) => {
+	component[COMPONENT_META] = { props }
+
+	return component
 }
