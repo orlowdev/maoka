@@ -9,20 +9,34 @@ export const Discounter = maoka.create(({ refresh$ }) => {
 	}
 
 	return () => [
-		Count(() => ({ key: 1, count })),
-		count < -10 ? Count(() => ({ key: 2, count: count - 10 })) : void 0,
 		Discount(() => ({ onClick })),
+		...createCounters(count, 1),
 	]
 })
 
-const Count = maoka.html.div(
-	({ props$ }) =>
-		() =>
-			`Count: ${props$().count}`,
-)
+const createCounters = (count, place) => {
+	const nextPlace = place * 10
+
+	return [
+		...(Math.abs(count) >= nextPlace
+			? createCounters(count, nextPlace)
+			: []),
+		Count(() => ({
+			key: place,
+			digit: Math.floor(Math.abs(count) / place) % 10,
+		})),
+	]
+}
+
+const Count = maoka.html.div(({ props$, value }) => {
+	value.className = "demo-tile"
+
+	return () => props$().digit
+})
 
 const Discount = maoka.html.button(({ props$, value }) => {
+	value.className = "demo-tile demo-action"
 	value.onclick = () => props$().onClick()
 
-	return () => "-1"
+	return () => "-"
 })

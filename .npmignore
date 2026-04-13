@@ -1,0 +1,13 @@
+.DS_Store
+.gitignore
+.prettierrc
+
+bun.lock
+jsconfig.json
+tsconfig.json
+
+docs/
+node_modules/
+
+*.test.js
+**/*.test.js

@@ -41,19 +41,19 @@ export const updateNodeComponent = (node, component) => {
 }
 
 export const html = HTML_TAGS.reduce((acc, tag) => {
-	acc[tag] = definition => pure(tag, definition)
+	acc[tag] = definition => pure(createTag("html", tag), definition)
 
 	return acc
 }, {})
 
 export const math = MATH_TAGS.reduce((acc, tag) => {
-	acc[tag] = definition => pure(tag, definition)
+	acc[tag] = definition => pure(createTag("math", tag), definition)
 
 	return acc
 }, {})
 
 export const svg = SVG_TAGS.reduce((acc, tag) => {
-	acc[tag] = definition => pure(tag, definition)
+	acc[tag] = definition => pure(createTag("svg", tag), definition)
 
 	return acc
 }, {})
@@ -158,3 +158,5 @@ const createComponent = (props, component) => {
 
 	return component
 }
+
+const createTag = (namespace, tag) => ({ namespace, tag })

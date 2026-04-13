@@ -75,6 +75,16 @@ const removeNode = node => {
 }
 
 const createElement = (document, tag) => {
+	if (tag.namespace === "svg") {
+		return document.createElementNS(SVG_NAMESPACE, tag.tag)
+	}
+
+	if (tag.namespace === "math") {
+		return document.createElementNS(MATH_NAMESPACE, tag.tag)
+	}
+
+	if (tag.namespace === "html") return document.createElement(tag.tag)
+
 	if (SVG_TAGS.includes(tag)) return document.createElementNS(SVG_NAMESPACE, tag)
 	if (MATH_TAGS.includes(tag)) return document.createElementNS(MATH_NAMESPACE, tag)
 

@@ -14,7 +14,7 @@ const createRoot = () => {
 		createValue: tag => {
 			createdValueTags.push(tag)
 
-			return { tag }
+			return { tag: typeof tag === "string" ? tag : tag.tag }
 		},
 		refreshNode: node => void refreshedNodes.push(node),
 	}
@@ -138,7 +138,7 @@ describe("maoka components", () => {
 			const { createdValueTags, parent, root } = createRoot()
 			const node = maoka[namespace][tag](() => () => tag)()(root, parent)
 
-			expect(createdValueTags).toEqual([tag])
+			expect(createdValueTags).toEqual([{ namespace, tag }])
 			expect(node.value).toEqual({ tag })
 			expect(node.template).toBe(tag)
 		}

@@ -8,6 +8,8 @@ export type Maoka = {
 
 export namespace Maoka {
 	type Key = string | number
+	type Namespace = "html" | "svg" | "math"
+	type Tag = string | { namespace: Namespace; tag: string }
 
 	type KeyProps = { key?: Key }
 	type NoProps = void
@@ -66,7 +68,7 @@ export namespace Maoka {
 		value: $Type
 		children: Node<$Type, any>[]
 		createKey: () => Key
-		createValue: (tag: string) => $Type
+		createValue: (tag: Tag) => $Type
 		mountNode: (node: Node<$Type, any>) => void
 		refreshNode: (node: Node<$Type, any>) => void
 		flushRefreshQueue: () => void
@@ -76,7 +78,7 @@ export namespace Maoka {
 		key?: Key
 		value: $Type
 		createKey?: () => Key
-		createValue: (tag: string) => $Type
+		createValue: (tag: Tag) => $Type
 		refreshNode: (node: Node<$Type, any>) => void
 		insertNode?: (
 			parent: Node<$Type, any>,

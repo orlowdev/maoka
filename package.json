@@ -1,7 +1,23 @@
 {
   "name": "maoka",
+  "version": "0.0.0",
   "module": "index.js",
+  "types": "maoka.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./maoka.d.ts",
+      "import": "./index.js"
+    },
+    "./dom": {
+      "types": "./dom/maoka-dom.d.ts",
+      "import": "./dom/index.js"
+    },
+    "./test": {
+      "types": "./test/maoka-test.d.ts",
+      "import": "./test/index.js"
+    }
+  },
   "scripts": {
     "docs": "bun --watch docs/server.js"
   },

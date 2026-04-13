@@ -5,8 +5,12 @@ const server = Bun.serve({
 	port,
 	async fetch(request) {
 		const url = new URL(request.url)
-		const pathname = url.pathname === "/" ? "/docs/index.html" : url.pathname
-		const file = Bun.file(new URL(`.${pathname}`, root))
+		const pathname = getPathname(url.pathname)
+		let file = Bun.file(new URL(`.${pathname}`, root))
+
+		if (!(await file.exists()) && !pathname.startsWith("/docs/")) {
+			file = Bun.file(new URL(`./docs${pathname}`, root))
+		}
 
 		if (!(await file.exists())) {
 			return new Response("Not found", { status: 404 })
@@ -21,6 +25,12 @@ const server = Bun.serve({
 })
 
 console.log(`Maoka docs: http://localhost:${server.port}`)
+
+const getPathname = pathname => {
+	if (pathname === "/") return "/docs/index.html"
+
+	return pathname
+}
 
 const getContentType = pathname => {
 	if (pathname.endsWith(".html")) return "text/html; charset=utf-8"

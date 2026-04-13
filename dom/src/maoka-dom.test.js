@@ -80,7 +80,9 @@ describe("maokaDom.render", () => {
 	test("renders component templates into a DOM container", () => {
 		const container = createContainer()
 		const Counter = maoka.create(() => () => [
+			maoka.html.a(() => () => "Testing"),
 			maoka.html.button(() => () => "Count: 0"),
+			maoka.svg.a(() => () => ""),
 			maoka.svg.circle(() => () => ""),
 			maoka.math.mfrac(() => () => ""),
 		])
@@ -88,13 +90,18 @@ describe("maokaDom.render", () => {
 		render(container, Counter)
 
 		expect(container.children.map(child => child.tagName)).toEqual([
+			"a",
 			"button",
+			"a",
 			"circle",
 			"mfrac",
 		])
-		expect(container.children[0].textContent).toBe("Count: 0")
-		expect(container.children[1].namespaceURI).toBe("http://www.w3.org/2000/svg")
-		expect(container.children[2].namespaceURI).toBe(
+		expect(container.children[0].namespaceURI).toBe("html")
+		expect(container.children[0].textContent).toBe("Testing")
+		expect(container.children[1].textContent).toBe("Count: 0")
+		expect(container.children[2].namespaceURI).toBe("http://www.w3.org/2000/svg")
+		expect(container.children[3].namespaceURI).toBe("http://www.w3.org/2000/svg")
+		expect(container.children[4].namespaceURI).toBe(
 			"http://www.w3.org/1998/Math/MathML",
 		)
 	})
