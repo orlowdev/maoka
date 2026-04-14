@@ -53,7 +53,7 @@ const cancelAnimationFrameRefresh = scheduledRefresh => {
 }
 
 const refreshNode = node => {
-	node.value.textContent = node.template == null ? "" : String(node.template)
+	node.value.textContent = node.lastRenderResult == null ? "" : String(node.lastRenderResult)
 }
 
 const insertNode = (parent, node, index) => {
@@ -104,14 +104,18 @@ const createRootNode = (root, container) => ({
 	props$: () => ({ key: root.key }),
 	root,
 	render: () => root.children,
-	template: root.children,
+	lastRenderResult: root.children,
 	parent: null,
 	children: root.children,
 	refresh$: () => root.refreshNode(createRootNode(root, container)),
 	lifecycleHandlers: {
-		refresh: [],
+		afterMount: [],
+		beforeRefresh: [],
 		error: [],
+		beforeUnmount: [],
+		afterUnmount: [],
 	},
+	mounted: true,
 })
 
 const instantiateComponent = (component, root, parent) => {

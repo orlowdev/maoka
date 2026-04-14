@@ -4,6 +4,7 @@ export type Maoka = {
 	html: Record<Maoka.HtmlTag, Maoka.TaggedComponent>
 	svg: Record<Maoka.SvgTag, Maoka.TaggedComponent>
 	math: Record<Maoka.MathMlTag, Maoka.TaggedComponent>
+	jabs: Maoka.Jabs
 }
 
 export namespace Maoka {
@@ -33,15 +34,31 @@ export namespace Maoka {
 		jab: Jab<$Type, $Props, $Return>,
 	) => $Return
 
+	type Jabs = {
+		noRefresh: Jab
+		shouldComponentUpdate: <$Props extends BaseProps = NoProps>(
+			compare: (prevProps: $Props, nextProps: $Props) => boolean,
+		) => Jab<any, $Props>
+	}
+
 	type Refresh$ = () => void
 
-	type RefreshHandler = () => boolean | void
+	type BeforeRefreshHandler = () => boolean | void
 
 	type ErrorHandler = (error: Error) => void
 
+	type AfterUnmountHandler = () => void
+
+	type AfterMountHandler = () => AfterUnmountHandler | void
+
+	type BeforeUnmountHandler = () => void
+
 	type Lifecycle = {
-		onRefresh: (handler: RefreshHandler) => void
+		afterMount: (handler: AfterMountHandler) => void
+		beforeRefresh: (handler: BeforeRefreshHandler) => void
 		onError: (handler: ErrorHandler) => void
+		beforeUnmount: (handler: BeforeUnmountHandler) => void
+		afterUnmount: (handler: AfterUnmountHandler) => void
 	}
 
 	type Params<$Type = any, $Props extends BaseProps = NoProps> = {
@@ -62,6 +79,10 @@ export namespace Maoka {
 	type ComponentDefinition<$Props extends BaseProps = NoProps, $Type = any> = (
 		params: Params<$Type, $Props>,
 	) => Render
+
+	type BeforeCreateHandler<$Type = any, $Props extends BaseProps = NoProps> = (
+		params: Params<$Type, $Props>,
+	) => void
 
 	type Root<$Type = any> = {
 		key: Key
@@ -105,20 +126,28 @@ export namespace Maoka {
 		props$: DefinitionProps<$Props>
 		root: Root<$Type>
 		render: Render
-		template: Template
+		lastRenderResult: Template
 		parent: Node<$Type, any>
 		children: Node<$Type, any>[]
 		refresh$: Refresh$
 		lifecycleHandlers: {
-			refresh: RefreshHandler[]
+			afterMount: AfterMountHandler[]
+			beforeRefresh: BeforeRefreshHandler[]
 			error: ErrorHandler[]
+			beforeUnmount: BeforeUnmountHandler[]
+			afterUnmount: AfterUnmountHandler[]
 		}
+		mounted: boolean
 	}
 
-	type Component<$Type = any, $Props extends BaseProps = NoProps> = (
+	type Component<$Type = any, $Props extends BaseProps = NoProps> = ((
 		root: Root<$Type>,
 		parent: Node,
-	) => Node<$Type, $Props>
+	) => Node<$Type, $Props>) & {
+		beforeCreate: (
+			handler: BeforeCreateHandler<$Type, $Props>,
+		) => Component<$Type, $Props>
+	}
 
 	type Create = <$Props extends Maoka.BaseProps = Maoka.NoProps>(
 		definition: Maoka.ComponentDefinition<$Props>,

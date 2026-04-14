@@ -90,7 +90,7 @@ test("useCounter exposes state and refreshes", () => {
 			},
 		}
 
-		lifecycle.onRefresh(() => {
+		lifecycle.beforeRefresh(() => {
 			state.refreshes++
 
 			return true
@@ -131,7 +131,7 @@ test("useCounter exposes state and refreshes", () => {
 			},
 		}
 
-		lifecycle.onRefresh((): boolean => {
+		lifecycle.beforeRefresh((): boolean => {
 			state.refreshes++
 
 			return true

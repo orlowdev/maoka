@@ -105,6 +105,105 @@ describe("maoka test renderer", () => {
 		})
 	})
 
+	test("runs component beforeUnmount handlers when children are removed", () => {
+		const calls = []
+		let visible = true
+		let refresh
+		const Child = maoka.html.div(({ lifecycle }) => {
+			lifecycle.beforeUnmount(() => calls.push("beforeUnmount:child"))
+
+			return () => "Child"
+		})
+		const App = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () => visible ? Child() : null
+		})
+		const renderer = render(App)
+
+		expect(renderer.text()).toBe("Child")
+
+		visible = false
+		refresh()
+		renderer.flush()
+
+		expect(renderer.text()).toBe("")
+		expect(calls).toEqual(["beforeUnmount:child"])
+	})
+
+	test("does not rerun beforeCreate handlers when components are reused", () => {
+		const calls = []
+		let count = 0
+		let refresh
+		const Count = maoka.html.div(({ props$ }) => () => `Count: ${props$().count}`)
+		const App = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () =>
+				Count(() => ({ key: "count", count })).beforeCreate(params => {
+					calls.push(`before:${params.key}`)
+				})
+		})
+		const renderer = render(App)
+
+		expect(renderer.text()).toBe("Count: 0")
+		expect(calls).toEqual(["before:count"])
+
+		count = 1
+		refresh()
+		renderer.flush()
+
+		expect(renderer.text()).toBe("Count: 1")
+		expect(calls).toEqual(["before:count"])
+	})
+
+	test("does not rerun afterMount handlers when keyed components are reordered", () => {
+		const calls = []
+		let items = ["a", "b"]
+		let refresh
+		const Row = maoka.html.div(({ lifecycle, props$ }) => {
+			lifecycle.afterMount(() => {
+				calls.push(`afterMount:${props$().id}`)
+			})
+
+			return () => props$().id
+		})
+		const App = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () =>
+				items.map(id =>
+					Row(() => ({ key: id, id })),
+				)
+		})
+		const renderer = render(App)
+
+		expect(renderer.text()).toBe("ab")
+		expect(calls).toEqual(["afterMount:a", "afterMount:b"])
+
+		items = ["b", "a"]
+		refresh()
+		renderer.flush()
+
+		expect(renderer.text()).toBe("ba")
+		expect(calls).toEqual(["afterMount:a", "afterMount:b"])
+	})
+
+	test("runs afterMount handlers for root create components that share parent values", () => {
+		const calls = []
+		const App = maoka.create(({ lifecycle }) => {
+			lifecycle.afterMount(() => {
+				calls.push("afterMount:app")
+			})
+
+			return () => "App"
+		})
+		const renderer = render(App)
+
+		expect(renderer.text()).toBe("App")
+		expect(calls).toEqual(["afterMount:app"])
+	})
+
 	test("runs jabs with real params, props, lifecycle, and refresh", () => {
 		let count = 1
 		const useCounter = ({ lifecycle, props$, refresh$ }) => {
@@ -115,7 +214,7 @@ describe("maoka test renderer", () => {
 				},
 			}
 
-			lifecycle.onRefresh(() => {
+			lifecycle.beforeRefresh(() => {
 				state.refreshes++
 
 				return true

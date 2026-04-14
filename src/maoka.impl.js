@@ -1,6 +1,6 @@
 import { HTML_TAGS, MATH_TAGS, SVG_TAGS } from "./maoka.constants.js"
 
-const COMPONENT_META = Symbol("maoka.component")
+export * as jabs from "./jabs.impl.js"
 
 /**
  * Creates a Maoka node.
@@ -11,8 +11,16 @@ export const create = definition => {
 	const type = {}
 
 	return props =>
-		createComponent(props, type, (root, parent) =>
-			createBase(root, props, parent, definition, parent.value, type),
+		createComponent(props, type, (root, parent, beforeCreateHandlers) =>
+			createBase(
+				root,
+				props,
+				parent,
+				definition,
+				parent.value,
+				type,
+				beforeCreateHandlers,
+			),
 		)
 }
 
@@ -27,8 +35,16 @@ export const pure = (tag, definition) => {
 	const type = { tag }
 
 	return props =>
-		createComponent(props, type, (root, parent) =>
-			createBase(root, props, parent, definition, root.createValue(tag), type),
+		createComponent(props, type, (root, parent, beforeCreateHandlers) =>
+			createBase(
+				root,
+				props,
+				parent,
+				definition,
+				root.createValue(tag),
+				type,
+				beforeCreateHandlers,
+			),
 		)
 }
 
@@ -71,12 +87,22 @@ export const svg = SVG_TAGS.reduce((acc, tag) => {
 
 // --- Internal ---
 
+const COMPONENT_META = Symbol("maoka.component")
+
 /**
  * Internal function to create a Maoka node.
  *
  * @type {<$Type = any>(root: Maoka.Root, props: Maoka.Props, parent: Maoka.Node, definition: Maoka.ComponentDefinition, value: $Type) => Maoka.Node}
  */
-const createBase = (root, props, parent, definition, value, type) => {
+const createBase = (
+	root,
+	props,
+	parent,
+	definition,
+	value,
+	type,
+	beforeCreateHandlers,
+) => {
 	let key = root.createKey()
 	let initialized = false
 	let propsSource = props
@@ -119,16 +145,20 @@ const createBase = (root, props, parent, definition, value, type) => {
 		key,
 		value,
 		render: () => undefined,
-		template: null,
+		lastRenderResult: null,
 		root,
 		parent,
 		children: [],
 		props$,
 		refresh$: () => root.refreshNode(node),
 		lifecycleHandlers: {
-			refresh: [],
+			afterMount: [],
+			beforeRefresh: [],
 			error: [],
+			beforeUnmount: [],
+			afterUnmount: [],
 		},
+		mounted: false,
 		componentType: type,
 		updateProps: nextProps => {
 			propsSource = nextProps
@@ -146,14 +176,23 @@ const createBase = (root, props, parent, definition, value, type) => {
 		rootKey: root.key,
 		parentKey: parent.key,
 		lifecycle: {
-			onRefresh: handler => void node.lifecycleHandlers.refresh.push(handler),
+			afterMount: handler =>
+				void node.lifecycleHandlers.afterMount.push(handler),
+			beforeRefresh: handler =>
+				void node.lifecycleHandlers.beforeRefresh.push(handler),
 			onError: handler => void node.lifecycleHandlers.error.push(handler),
+			beforeUnmount: handler =>
+				void node.lifecycleHandlers.beforeUnmount.push(handler),
+			afterUnmount: handler =>
+				void node.lifecycleHandlers.afterUnmount.push(handler),
 		},
 	}
 
 	try {
+		props$()
+		beforeCreateHandlers.forEach(handler => handler(params))
 		node.render = definition(params)
-		node.template = node.render()
+		node.lastRenderResult = node.render()
 	} catch (error) {
 		node.lifecycleHandlers.error.forEach(handler => handler(error))
 	}
@@ -163,7 +202,17 @@ const createBase = (root, props, parent, definition, value, type) => {
 	return node
 }
 
-const createComponent = (props, type, component) => {
+const createComponent = (props, type, instantiate) => {
+	const beforeCreateHandlers = []
+	const component = (root, parent) =>
+		instantiate(root, parent, beforeCreateHandlers)
+
+	component.beforeCreate = handler => {
+		beforeCreateHandlers.push(handler)
+
+		return component
+	}
+
 	component[COMPONENT_META] = { props, type }
 
 	return component

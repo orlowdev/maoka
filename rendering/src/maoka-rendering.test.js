@@ -9,14 +9,18 @@ const createNode = key => ({
 	props$: () => ({ key }),
 	root: null,
 	render: () => key,
-	template: key,
+	lastRenderResult: key,
 	parent: null,
 	children: [],
 	refresh$: () => {},
 	lifecycleHandlers: {
-		refresh: [],
+		afterMount: [],
+		beforeRefresh: [],
 		error: [],
+		beforeUnmount: [],
+		afterUnmount: [],
 	},
+	mounted: false,
 })
 
 const createPropsNode = (key, getProps) => {
@@ -123,7 +127,7 @@ describe("createRoot", () => {
 		const grandchild = createPropsNode("grandchild", () => ({ grandchildCount }))
 
 		parent.children.push(child)
-		parent.lifecycleHandlers.refresh.push(() => {})
+		parent.lifecycleHandlers.beforeRefresh.push(() => {})
 		child.children.push(grandchild)
 		childCount++
 		grandchildCount++
@@ -147,7 +151,7 @@ describe("createRoot", () => {
 		const child = createPropsNode("child", () => ({ childCount }))
 
 		parent.children.push(child)
-		parent.lifecycleHandlers.refresh.push(() => {})
+		parent.lifecycleHandlers.beforeRefresh.push(() => {})
 		childCount++
 
 		root.refreshNode(parent)
@@ -167,7 +171,7 @@ describe("createRoot", () => {
 		const child = createPropsNode("child", () => ({ count: 1 }))
 
 		parent.children.push(child)
-		parent.lifecycleHandlers.refresh.push(() => {})
+		parent.lifecycleHandlers.beforeRefresh.push(() => {})
 
 		root.refreshNode(parent)
 		root.flushRefreshQueue()
@@ -186,22 +190,22 @@ describe("createRoot", () => {
 		const refreshedNode = createNode("refreshed")
 		const refreshCalls = []
 
-		skippedNode.lifecycleHandlers.refresh.push(() => {
+		skippedNode.lifecycleHandlers.beforeRefresh.push(() => {
 			refreshCalls.push("skipped:first")
 
 			return
 		})
-		skippedNode.lifecycleHandlers.refresh.push(() => {
+		skippedNode.lifecycleHandlers.beforeRefresh.push(() => {
 			refreshCalls.push("skipped:second")
 
 			return
 		})
-		refreshedNode.lifecycleHandlers.refresh.push(() => {
+		refreshedNode.lifecycleHandlers.beforeRefresh.push(() => {
 			refreshCalls.push("refreshed:first")
 
 			return
 		})
-		refreshedNode.lifecycleHandlers.refresh.push(() => {
+		refreshedNode.lifecycleHandlers.beforeRefresh.push(() => {
 			refreshCalls.push("refreshed:second")
 
 			return true
@@ -232,12 +236,12 @@ describe("createRoot", () => {
 		})
 		const node = createNode("node")
 
-		node.lifecycleHandlers.refresh.push(() => {
+		node.lifecycleHandlers.beforeRefresh.push(() => {
 			refreshCalls.push("first")
 
 			throw error
 		})
-		node.lifecycleHandlers.refresh.push(() => {
+		node.lifecycleHandlers.beforeRefresh.push(() => {
 			refreshCalls.push("second")
 
 			return true
@@ -302,5 +306,93 @@ describe("createRoot", () => {
 
 		expect(handledErrors).toEqual([error])
 		expect(refreshedNodes).toEqual([stable])
+	})
+
+	test("runs beforeUnmount handlers before removing stale nodes", () => {
+		const calls = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {},
+			removeNode: node => void calls.push(`remove:${node.key}`),
+		})
+		const parent = createNode("parent")
+		const child = createNode("child")
+		const grandchild = createNode("grandchild")
+
+		parent.children.push(child)
+		child.children.push(grandchild)
+		child.lifecycleHandlers.beforeUnmount.push(() =>
+			calls.push("beforeUnmount:child"),
+		)
+		grandchild.lifecycleHandlers.beforeUnmount.push(() =>
+			calls.push("beforeUnmount:grandchild"),
+		)
+		parent.lastRenderResult = []
+
+		root.mountNode(parent)
+
+		expect(calls).toEqual([
+			"beforeUnmount:grandchild",
+			"remove:grandchild",
+			"beforeUnmount:child",
+			"remove:child",
+		])
+	})
+
+	test("runs afterMount handlers once after insertion and afterUnmount handlers after removal", () => {
+		const calls = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {},
+			insertNode: (parent, node) => {
+				calls.push(`insert:${node.key}:into:${parent.key}`)
+			},
+			removeNode: node => {
+				calls.push(`remove:${node.key}`)
+			},
+		})
+		const parent = createNode("parent")
+		let child
+		const Child = (root, parent) => {
+			child = createNode("child")
+			child.root = root
+			child.parent = parent
+			child.lifecycleHandlers.afterMount.push(() => {
+				calls.push("afterMount:child")
+
+				return () => calls.push("afterMount-cleanup:child")
+			})
+			child.lifecycleHandlers.afterUnmount.push(() =>
+				calls.push("afterUnmount:child"),
+			)
+
+			return child
+		}
+
+		parent.mounted = true
+		parent.lastRenderResult = [() => Child]
+
+		root.mountNode(parent)
+		root.mountNode(parent)
+
+		expect(child.mounted).toBe(true)
+		expect(calls).toEqual([
+			"insert:child:into:parent",
+			"afterMount:child",
+		])
+
+		parent.lastRenderResult = []
+		root.mountNode(parent)
+
+		expect(child.mounted).toBe(false)
+		expect(calls).toEqual([
+			"insert:child:into:parent",
+			"afterMount:child",
+			"afterMount-cleanup:child",
+			"remove:child",
+			"afterUnmount:child",
+		])
 	})
 })

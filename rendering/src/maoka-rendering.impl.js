@@ -106,9 +106,9 @@ const queueMicrotaskScheduler = flush => {
 const refreshNode = (node, options, force) => {
 	if (!force && !refreshProps(node)) return false
 
-	let shouldRefresh = node.lifecycleHandlers.refresh.length === 0
+	let shouldRefresh = node.lifecycleHandlers.beforeRefresh.length === 0
 
-	for (const handler of node.lifecycleHandlers.refresh) {
+	for (const handler of node.lifecycleHandlers.beforeRefresh) {
 		try {
 			if (handler() === true) shouldRefresh = true
 		} catch (error) {
@@ -119,7 +119,7 @@ const refreshNode = (node, options, force) => {
 	if (!shouldRefresh) return true
 
 	try {
-		node.template = node.render()
+		node.lastRenderResult = node.render()
 		applyTemplate(node, options)
 	} catch (error) {
 		handleNodeError(node, error)
@@ -131,20 +131,21 @@ const refreshNode = (node, options, force) => {
 const mountNode = (node, options) => {
 	try {
 		applyTemplate(node, options)
+		mountImplicitNode(node)
 	} catch (error) {
 		handleNodeError(node, error)
 	}
 }
 
 const applyTemplate = (node, options) => {
-	if (Array.isArray(node.template)) {
-		applyTemplateList(node, node.template, options)
+	if (Array.isArray(node.lastRenderResult)) {
+		applyTemplateList(node, node.lastRenderResult, options)
 
 		return
 	}
 
-	if (isComponentTemplate(node.template)) {
-		applyComponentTemplates(node, [toComponent(node.template)], options)
+	if (isComponentTemplate(node.lastRenderResult)) {
+		applyComponentTemplates(node, [toComponent(node.lastRenderResult)], options)
 
 		return
 	}
@@ -162,7 +163,7 @@ const applyTemplateList = (node, template, options) => {
 		return
 	}
 
-	node.template = templateItems.join("")
+	node.lastRenderResult = templateItems.join("")
 	removeChildren(node, options)
 	options.refreshNode(node)
 }
@@ -201,7 +202,7 @@ const applyComponentTemplates = (node, components, options) => {
 
 	for (const child of previousChildren) {
 		if (!usedChildren.has(child)) {
-			options.removeNode(child)
+			destroyNode(child, options)
 		}
 	}
 
@@ -210,15 +211,71 @@ const applyComponentTemplates = (node, components, options) => {
 
 	for (const [index, child] of nextChildren.entries()) {
 		options.insertNode(node, child, index)
+		if (node.mounted) mountNodeTree(child)
 	}
 }
 
 const removeChildren = (node, options) => {
 	for (const child of node.children) {
-		options.removeNode(child)
+		destroyNode(child, options)
 	}
 
 	node.children.length = 0
+}
+
+const destroyNode = (node, options) => {
+	removeChildren(node, options)
+
+	for (const handler of node.lifecycleHandlers.beforeUnmount) {
+		try {
+			handler()
+		} catch (error) {
+			handleNodeError(node, error)
+		}
+	}
+
+	options.removeNode(node)
+	unmountNode(node)
+}
+
+const mountNodeTree = node => {
+	if (node.mounted) return
+
+	node.mounted = true
+
+	for (const handler of node.lifecycleHandlers.afterMount) {
+		try {
+			const cleanup = handler()
+
+			if (typeof cleanup === "function") {
+				node.lifecycleHandlers.beforeUnmount.push(cleanup)
+			}
+		} catch (error) {
+			handleNodeError(node, error)
+		}
+	}
+
+	node.children.forEach(mountNodeTree)
+}
+
+const mountImplicitNode = node => {
+	if (node.parent?.mounted && node.value === node.parent.value) {
+		mountNodeTree(node)
+	}
+}
+
+const unmountNode = node => {
+	if (!node.mounted) return
+
+	node.mounted = false
+
+	for (const handler of node.lifecycleHandlers.afterUnmount) {
+		try {
+			handler()
+		} catch (error) {
+			handleNodeError(node, error)
+		}
+	}
 }
 
 const instantiateComponent = (component, root, parent) =>

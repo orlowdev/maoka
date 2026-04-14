@@ -96,7 +96,7 @@ export const renderJab = (jab, options = {}) => {
 export const setup = renderJab
 
 const refreshNode = node => {
-	node.value.text = node.template == null ? "" : String(node.template)
+	node.value.text = node.lastRenderResult == null ? "" : String(node.lastRenderResult)
 }
 
 const insertNode = (parent, node, index) => {
@@ -129,14 +129,18 @@ const createRootNode = (root, value) => ({
 	props$: () => ({ key: root.key }),
 	root,
 	render: () => root.children,
-	template: root.children,
+	lastRenderResult: root.children,
 	parent: null,
 	children: root.children,
 	refresh$: () => root.refreshNode(root.children[0]),
 	lifecycleHandlers: {
-		refresh: [],
+		afterMount: [],
+		beforeRefresh: [],
 		error: [],
+		beforeUnmount: [],
+		afterUnmount: [],
 	},
+	mounted: true,
 })
 
 const instantiateComponent = (component, root, parent) => {

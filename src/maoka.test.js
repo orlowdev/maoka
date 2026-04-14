@@ -26,12 +26,16 @@ const createRoot = () => {
 		props$: () => ({ key: "parent" }),
 		root,
 		parent: null,
-		template: null,
+		lastRenderResult: null,
 		children: [],
 		lifecycleHandlers: {
-			refresh: [],
+			afterMount: [],
+			beforeRefresh: [],
 			error: [],
+			beforeUnmount: [],
+			afterUnmount: [],
 		},
+		mounted: true,
 	}
 
 	return { createdValueTags, parent, refreshedNodes, root }
@@ -40,13 +44,13 @@ const createRoot = () => {
 describe("maoka components", () => {
 	test("create builds a node from the parent value", () => {
 		const { parent, refreshedNodes, root } = createRoot()
-		const onRefresh = () => {}
+		const beforeRefresh = () => {}
 		const onError = () => {}
 		let params
 
 		const node = maoka.create(receivedParams => {
 			params = receivedParams
-			receivedParams.lifecycle.onRefresh(onRefresh)
+			receivedParams.lifecycle.beforeRefresh(beforeRefresh)
 			receivedParams.lifecycle.onError(onError)
 
 			return () => ({
@@ -64,7 +68,7 @@ describe("maoka components", () => {
 			root,
 			parent,
 			children: [],
-			template: {
+			lastRenderResult: {
 				key: "key-1",
 				parentKey: "parent",
 				rootKey: "root",
@@ -72,8 +76,8 @@ describe("maoka components", () => {
 				value: parent.value,
 			},
 		})
-		expect(node.render()).toEqual(node.template)
-		expect(node.lifecycleHandlers.refresh).toEqual([onRefresh])
+		expect(node.render()).toEqual(node.lastRenderResult)
+		expect(node.lifecycleHandlers.beforeRefresh).toEqual([beforeRefresh])
 		expect(node.lifecycleHandlers.error).toEqual([onError])
 
 		params.refresh$()
@@ -84,6 +88,59 @@ describe("maoka components", () => {
 
 		expect(node.props$()).toEqual({ id: "box", key: "key-1" })
 		expect(refreshedNodes).toEqual([node])
+	})
+
+	test("component beforeCreate handlers run once before the definition", () => {
+		const { parent, root } = createRoot()
+		const calls = []
+		const Component = maoka.create(params => {
+			calls.push(`definition:${params.key}`)
+
+			return () => {
+				calls.push(`render:${params.key}`)
+
+				return params.key
+			}
+		})(() => ({ id: "box", key: "custom-key" }))
+
+		const returned = Component.beforeCreate(params => {
+			calls.push(`before:first:${params.key}`)
+		}).beforeCreate(params => {
+			calls.push(`before:second:${params.key}`)
+		})
+
+		expect(returned).toBe(Component)
+
+		const node = Component(root, parent)
+
+		expect(node.lastRenderResult).toBe("custom-key")
+		expect(calls).toEqual([
+			"before:first:custom-key",
+			"before:second:custom-key",
+			"definition:custom-key",
+			"render:custom-key",
+		])
+
+		node.render()
+
+		expect(calls).toEqual([
+			"before:first:custom-key",
+			"before:second:custom-key",
+			"definition:custom-key",
+			"render:custom-key",
+			"render:custom-key",
+		])
+	})
+
+	test("initial props read does not queue a refresh", () => {
+		const { parent, refreshedNodes, root } = createRoot()
+		const node = maoka.create(params => () => params.key)(() => ({
+			key: "custom-key",
+		}))(root, parent)
+
+		expect(node.key).toBe("custom-key")
+		expect(node.lastRenderResult).toBe("custom-key")
+		expect(refreshedNodes).toEqual([])
 	})
 
 	test("props update the node key and refresh only when values change", () => {
@@ -98,7 +155,7 @@ describe("maoka components", () => {
 		})(() => ({ count, key }))(root, parent)
 
 		expect(node.key).toBe(0)
-		expect(node.template).toBe("Count: 1")
+		expect(node.lastRenderResult).toBe("Count: 1")
 		expect(refreshedNodes).toEqual([])
 
 		expect(node.render()).toBe("Count: 1")
@@ -124,7 +181,7 @@ describe("maoka components", () => {
 		expect(createdValueTags).toEqual(["span"])
 		expect(node.value).toEqual({ tag: "span" })
 		expect(node.value).not.toBe(parent.value)
-		expect(node.template).toBe("key-2")
+		expect(node.lastRenderResult).toBe("key-2")
 	})
 
 	test("tagged html, svg, and math helpers create pure components", () => {
@@ -140,7 +197,7 @@ describe("maoka components", () => {
 
 			expect(createdValueTags).toEqual([{ namespace, tag }])
 			expect(node.value).toEqual({ tag })
-			expect(node.template).toBe(tag)
+			expect(node.lastRenderResult).toBe(tag)
 		}
 	})
 })

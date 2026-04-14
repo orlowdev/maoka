@@ -6,6 +6,7 @@ const pages = [
 	{ href: "/tutorial.html", label: "Tutorial" },
 	{ href: "/api.html", label: "API" },
 	{ href: "/rendering.html", label: "Rendering" },
+	{ href: "/component-lifecycle.html", label: "Component lifecycle" },
 	{ href: "/testing.html", label: "Testing" },
 ]
 

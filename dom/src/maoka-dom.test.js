@@ -141,7 +141,7 @@ describe("maokaDom.render", () => {
 		const Count = maoka.html.button(({ props$ }) => () => `Count: ${props$().count}`)
 		const Inc = maoka.html.button(({ value, lifecycle }) => {
 			value.onclick = () => inc()
-			lifecycle.onRefresh(() => {})
+			lifecycle.beforeRefresh(() => {})
 
 			return () => "+"
 		})
@@ -302,7 +302,7 @@ describe("maokaDom.render", () => {
 		const Label = maoka.html.div(({ props$ }) => () => props$().label)
 		const Example = maoka.create(({ refresh$, lifecycle }) => {
 			refresh = refresh$
-			lifecycle.onRefresh(() => true)
+			lifecycle.beforeRefresh(() => true)
 
 			return () => [
 				Label(() => ({ key: "a", label: "A" })),
