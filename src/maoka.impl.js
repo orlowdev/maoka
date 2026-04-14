@@ -1,17 +1,20 @@
 import { HTML_TAGS, MATH_TAGS, SVG_TAGS } from "./maoka.constants.js"
 
 const COMPONENT_META = Symbol("maoka.component")
-const NODE_META = Symbol("maoka.node")
 
 /**
  * Creates a Maoka node.
  *
  * @type {Maoka.Create}
  */
-export const create = definition => props =>
-	createComponent(props, (root, parent) =>
-		createBase(root, props, parent, definition, parent.value),
-	)
+export const create = definition => {
+	const type = {}
+
+	return props =>
+		createComponent(props, type, (root, parent) =>
+			createBase(root, props, parent, definition, parent.value, type),
+		)
+}
 
 /**
  * Creates a pure Maoka component. This component is pure in a sense that it
@@ -20,10 +23,14 @@ export const create = definition => props =>
  *
  * @type {Maoka.Pure}
  */
-export const pure = (tag, definition) => props =>
-	createComponent(props, (root, parent) =>
-		createBase(root, props, parent, definition, root.createValue(tag)),
-	)
+export const pure = (tag, definition) => {
+	const type = { tag }
+
+	return props =>
+		createComponent(props, type, (root, parent) =>
+			createBase(root, props, parent, definition, root.createValue(tag), type),
+		)
+}
 
 export const isComponent = value =>
 	typeof value === "function" && Boolean(value[COMPONENT_META])
@@ -36,8 +43,12 @@ export const getComponentKey = component => {
 	return props()?.key
 }
 
+export const getComponentType = component => component[COMPONENT_META]?.type
+
+export const getNodeComponentType = node => node.componentType
+
 export const updateNodeComponent = (node, component) => {
-	node[NODE_META]?.updateProps(component[COMPONENT_META]?.props)
+	node.updateProps(component[COMPONENT_META]?.props)
 }
 
 export const html = HTML_TAGS.reduce((acc, tag) => {
@@ -65,7 +76,7 @@ export const svg = SVG_TAGS.reduce((acc, tag) => {
  *
  * @type {<$Type = any>(root: Maoka.Root, props: Maoka.Props, parent: Maoka.Node, definition: Maoka.ComponentDefinition, value: $Type) => Maoka.Node}
  */
-const createBase = (root, props, parent, definition, value) => {
+const createBase = (root, props, parent, definition, value, type) => {
 	let key = root.createKey()
 	let initialized = false
 	let propsSource = props
@@ -118,10 +129,9 @@ const createBase = (root, props, parent, definition, value) => {
 			refresh: [],
 			error: [],
 		},
-		[NODE_META]: {
-			updateProps: nextProps => {
-				propsSource = nextProps
-			},
+		componentType: type,
+		updateProps: nextProps => {
+			propsSource = nextProps
 		},
 	}
 
@@ -153,8 +163,8 @@ const createBase = (root, props, parent, definition, value) => {
 	return node
 }
 
-const createComponent = (props, component) => {
-	component[COMPONENT_META] = { props }
+const createComponent = (props, type, component) => {
+	component[COMPONENT_META] = { props, type }
 
 	return component
 }

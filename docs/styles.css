@@ -376,17 +376,41 @@ section {
 
 .philosophy-section {
 	position: relative;
-	padding-left: 26px;
 }
 
-.philosophy-section::before {
-	position: absolute;
-	left: 0;
-	top: 56px;
-	bottom: 10px;
-	width: 4px;
-	background: linear-gradient(var(--hot), var(--aqua), var(--sun));
-	content: "";
+.philosophy-lines {
+	display: grid;
+	gap: 22px;
+	margin-top: 26px;
+}
+
+.philosophy-line {
+	display: grid;
+	grid-template-columns: 48px minmax(0, 1fr);
+	gap: 18px;
+	align-items: start;
+	padding: 0 0 22px;
+	border-bottom: 1px solid rgba(21, 18, 42, 0.12);
+}
+
+.philosophy-index {
+	color: var(--hot);
+	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-size: 0.78rem;
+	font-weight: 1000;
+	letter-spacing: 0.16em;
+	text-shadow:
+		2px 0 0 rgba(0, 194, 255, 0.22),
+		0 0 14px rgba(255, 61, 139, 0.24);
+}
+
+.philosophy-line h3 {
+	font-size: clamp(1.1rem, 2vw, 1.42rem);
+}
+
+.philosophy-line p {
+	max-width: 650px;
+	margin-top: 6px;
 }
 
 .install-section,

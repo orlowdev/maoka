@@ -2,9 +2,14 @@
 
 import {
 	getComponentKey,
+	getComponentType,
+	getNodeComponentType,
 	isComponent,
+	pure,
 	updateNodeComponent,
 } from "../../src/maoka.impl.js"
+
+const Text = pure("#text", ({ props$ }) => () => props$().value)
 
 /**
  * Creates a renderer-agnostic Maoka root.
@@ -151,7 +156,7 @@ const applyTemplate = (node, options) => {
 const applyTemplateList = (node, template, options) => {
 	const templateItems = template.filter(isRenderableTemplate)
 
-	if (templateItems.every(isComponentTemplate)) {
+	if (templateItems.some(isComponentTemplate)) {
 		applyComponentTemplates(node, templateItems.map(toComponent), options)
 
 		return
@@ -175,7 +180,11 @@ const applyComponentTemplates = (node, components, options) => {
 				? previousChildren[index]
 				: previousKeyedChildren.get(componentKey)
 
-		if (child && !usedChildren.has(child)) {
+		if (
+			child &&
+			!usedChildren.has(child) &&
+			getNodeComponentType(child) === getComponentType(component)
+		) {
 			usedChildren.add(child)
 			updateNodeComponent(child, component)
 
@@ -220,7 +229,12 @@ const isComponentTemplate = template => typeof template === "function"
 const isRenderableTemplate = template =>
 	template !== null && template !== undefined && template !== false
 
-const toComponent = template => (isComponent(template) ? template : template())
+const toComponent = template => {
+	if (isComponent(template)) return template
+	if (isComponentTemplate(template)) return template()
+
+	return Text(() => ({ value: String(template) }))
+}
 
 const refreshProps = node => {
 	const previousProps = node.props

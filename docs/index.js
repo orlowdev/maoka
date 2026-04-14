@@ -94,13 +94,53 @@ const Philosophy = maoka.html.section(({ value }) => {
 
 			return () => "Philosophy"
 		})(),
-		maoka.html.h2(() => () => "Create once. Refresh with intent."),
-		maoka.html.p(() => () =>
-			"Maoka keeps component setup and rendering as two different phases. You wire state, lifecycle, and jabs once, then let the root orchestrate refresh work through the tree.",
-		),
-		maoka.html.p(() => () =>
-			"The point is not to hide the system. The point is to make it small enough that you can feel where every update goes.",
-		),
+		maoka.html.h2(() => () => "The way"),
+		maoka.html.div(({ value }) => {
+			value.className = "philosophy-lines"
+
+			return () => [
+				PhilosophyLine(() => ({
+					index: "01",
+					title: "A view may be declared, but change must be invited.",
+					body:
+						"The tree is a statement of shape. Updating it is a conscious act: a signal that the old statement has become insufficient.",
+				})),
+				PhilosophyLine(() => ({
+					index: "02",
+					title: "Behavior grows beside the component, not inside its shadow.",
+					body:
+						"Effects, policies, and derived state should have room to attach horizontally, without turning the component into a corridor of hidden obligations.",
+				})),
+				PhilosophyLine(() => ({
+					index: "03",
+					title: "Lifecycle is not an afterthought.",
+					body:
+						"To react to change, refusal, and failure is not outside the life of a component. It is the life of the component.",
+				})),
+				PhilosophyLine(() => ({
+					index: "04",
+					title: "Rendering is the trace, not the source.",
+					body:
+						"What appears on screen is only one possible footprint of the model. The important thing is the shape of intent before it becomes pixels.",
+				})),
+			]
+		})(),
+	]
+})
+
+const PhilosophyLine = maoka.html.div(({ props$, value }) => {
+	value.className = "philosophy-line"
+
+	return () => [
+		maoka.html.span(({ value }) => {
+			value.className = "philosophy-index"
+
+			return () => props$().index
+		})(),
+		maoka.html.div(() => () => [
+			maoka.html.h3(() => () => props$().title),
+			maoka.html.p(() => () => props$().body),
+		])(),
 	]
 })
 

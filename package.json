@@ -1,31 +1,32 @@
 {
-  "name": "maoka",
-  "version": "0.0.0",
-  "module": "index.js",
-  "types": "maoka.d.ts",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./maoka.d.ts",
-      "import": "./index.js"
-    },
-    "./dom": {
-      "types": "./dom/maoka-dom.d.ts",
-      "import": "./dom/index.js"
-    },
-    "./test": {
-      "types": "./test/maoka-test.d.ts",
-      "import": "./test/index.js"
-    }
-  },
-  "scripts": {
-    "docs": "bun --watch docs/server.js"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.3.12",
-    "playwright": "^1.59.1"
-  },
-  "peerDependencies": {
-    "typescript": "^6.0.2"
-  }
+	"name": "maoka",
+	"version": "0.0.0",
+	"module": "index.js",
+	"types": "maoka.d.ts",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./maoka.d.ts",
+			"import": "./index.js"
+		},
+		"./dom": {
+			"types": "./dom/maoka-dom.d.ts",
+			"import": "./dom/index.js"
+		},
+		"./test": {
+			"types": "./test/maoka-test.d.ts",
+			"import": "./test/index.js"
+		},
+		"./rendering": {
+			"import": "./rendering/index.js"
+		}
+	},
+	"scripts": {
+		"docs": "bun --watch docs/server.js"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.3.12",
+		"playwright": "^1.59.1",
+		"typescript": "^6.0.2"
+	}
 }

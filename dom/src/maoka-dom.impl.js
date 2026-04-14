@@ -57,11 +57,13 @@ const refreshNode = node => {
 }
 
 const insertNode = (parent, node, index) => {
-	if (node.value.parentNode !== parent.value && parent.value.children.length === 0) {
+	const childNodes = getChildNodes(parent.value)
+
+	if (node.value.parentNode !== parent.value && childNodes.length === 0) {
 		parent.value.textContent = ""
 	}
 
-	const beforeValue = parent.value.children[index] ?? null
+	const beforeValue = childNodes[index] ?? null
 
 	if (beforeValue === node.value) return
 
@@ -75,6 +77,8 @@ const removeNode = node => {
 }
 
 const createElement = (document, tag) => {
+	if (tag === "#text") return document.createTextNode("")
+
 	if (tag.namespace === "svg") {
 		return document.createElementNS(SVG_NAMESPACE, tag.tag)
 	}
@@ -90,6 +94,8 @@ const createElement = (document, tag) => {
 
 	return document.createElement(tag)
 }
+
+const getChildNodes = value => value.childNodes ?? value.children
 
 const createRootNode = (root, container) => ({
 	key: root.key,

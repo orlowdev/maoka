@@ -19,6 +19,10 @@ class FakeDocument {
 	createElementNS(namespaceURI, tag) {
 		return new FakeElement(this, tag, namespaceURI)
 	}
+
+	createTextNode(textContent) {
+		return new FakeText(this, textContent)
+	}
 }
 
 class FakeElement {
@@ -26,9 +30,14 @@ class FakeElement {
 		this.ownerDocument = ownerDocument
 		this.tagName = tagName
 		this.namespaceURI = namespaceURI
-		this.children = []
+		this.childNodes = []
 		this.parentNode = null
+		this.nodeType = 1
 		this._textContent = ""
+	}
+
+	get children() {
+		return this.childNodes.filter(child => child.nodeType === 1)
 	}
 
 	get textContent() {
@@ -36,11 +45,11 @@ class FakeElement {
 	}
 
 	set textContent(textContent) {
-		for (const child of this.children) {
+		for (const child of this.childNodes) {
 			child.parentNode = null
 		}
 
-		this.children = []
+		this.childNodes = []
 		this._textContent = textContent
 	}
 
@@ -53,12 +62,12 @@ class FakeElement {
 	insertBefore(child, before) {
 		if (child.parentNode) child.parentNode.removeChild(child)
 
-		const index = before ? this.children.indexOf(before) : -1
+		const index = before ? this.childNodes.indexOf(before) : -1
 
 		if (index === -1) {
-			this.children.push(child)
+			this.childNodes.push(child)
 		} else {
-			this.children.splice(index, 0, child)
+			this.childNodes.splice(index, 0, child)
 		}
 
 		child.parentNode = this
@@ -67,10 +76,19 @@ class FakeElement {
 	}
 
 	removeChild(child) {
-		this.children = this.children.filter(candidate => candidate !== child)
+		this.childNodes = this.childNodes.filter(candidate => candidate !== child)
 		child.parentNode = null
 
 		return child
+	}
+}
+
+class FakeText {
+	constructor(ownerDocument, textContent) {
+		this.ownerDocument = ownerDocument
+		this.parentNode = null
+		this.nodeType = 3
+		this.textContent = textContent
 	}
 }
 
@@ -312,5 +330,21 @@ describe("maokaDom.render", () => {
 			"B",
 			"C",
 		])
+	})
+
+	test("renders mixed component and text children as DOM child nodes", () => {
+		const container = createContainer()
+		const App = maoka.create(() => () => [
+			maoka.html.span(() => () => "Hello")(),
+			", Maoka",
+		])
+
+		render(container, App)
+
+		expect(container.childNodes).toHaveLength(2)
+		expect(container.childNodes[0].tagName).toBe("span")
+		expect(container.childNodes[0].textContent).toBe("Hello")
+		expect(container.childNodes[1].nodeType).toBe(3)
+		expect(container.childNodes[1].textContent).toBe(", Maoka")
 	})
 })

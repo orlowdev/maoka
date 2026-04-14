@@ -43,6 +43,68 @@ describe("maoka test renderer", () => {
 		})
 	})
 
+	test("renders mixed component and text children", () => {
+		const App = maoka.create(() => () => [
+			maoka.html.div(() => () => "Hello")(),
+			", Maoka",
+		])
+		const renderer = render(App)
+
+		expect(renderer.text()).toBe("Hello, Maoka")
+		expect(renderer.toJSON()).toEqual({
+			tag: "root",
+			children: [
+				{
+					tag: "div",
+					text: "Hello",
+				},
+				{
+					tag: "#text",
+					text: ", Maoka",
+				},
+			],
+		})
+	})
+
+	test("remounts unkeyed children when the component type changes", () => {
+		let asButton = false
+		let refresh
+		const Div = maoka.html.div(() => () => "Div")
+		const Button = maoka.html.button(() => () => "Button")
+		const App = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () => [
+				asButton ? Button() : Div(),
+			]
+		})
+		const renderer = render(App)
+
+		expect(renderer.toJSON()).toEqual({
+			tag: "root",
+			children: [
+				{
+					tag: "div",
+					text: "Div",
+				},
+			],
+		})
+
+		asButton = true
+		refresh()
+		renderer.flush()
+
+		expect(renderer.toJSON()).toEqual({
+			tag: "root",
+			children: [
+				{
+					tag: "button",
+					text: "Button",
+				},
+			],
+		})
+	})
+
 	test("runs jabs with real params, props, lifecycle, and refresh", () => {
 		let count = 1
 		const useCounter = ({ lifecycle, props$, refresh$ }) => {
