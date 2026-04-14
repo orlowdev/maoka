@@ -39,13 +39,23 @@ export namespace Maoka {
 		shouldComponentUpdate: <$Props extends BaseProps = NoProps>(
 			compare: (prevProps: $Props, nextProps: $Props) => boolean,
 		) => Jab<any, $Props>
+		errorBoundary: (handler: (error: Error) => void) => Jab
 	}
 
 	type Refresh$ = () => void
 
 	type BeforeRefreshHandler = () => boolean | void
 
-	type ErrorHandler = (error: Error) => void
+	type DescendantError = {
+		error: Error
+		handled: boolean
+		handle: () => void
+	}
+
+	type ErrorHandler = (
+		error?: Error,
+		descendantError?: DescendantError,
+	) => void
 
 	type AfterUnmountHandler = () => void
 

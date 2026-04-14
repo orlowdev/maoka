@@ -3,6 +3,7 @@
 import {
 	getComponentKey,
 	getComponentType,
+	handleNodeError,
 	getNodeComponentType,
 	isComponent,
 	pure,
@@ -210,7 +211,10 @@ const applyComponentTemplates = (node, components, options) => {
 	node.children.push(...nextChildren)
 
 	for (const [index, child] of nextChildren.entries()) {
-		options.insertNode(node, child, index)
+		if (!isImplicitNode(child)) {
+			options.insertNode(node, child, index)
+		}
+
 		if (node.mounted) mountNodeTree(child)
 	}
 }
@@ -234,7 +238,10 @@ const destroyNode = (node, options) => {
 		}
 	}
 
-	options.removeNode(node)
+	if (!isImplicitNode(node)) {
+		options.removeNode(node)
+	}
+
 	unmountNode(node)
 }
 
@@ -259,7 +266,7 @@ const mountNodeTree = node => {
 }
 
 const mountImplicitNode = node => {
-	if (node.parent?.mounted && node.value === node.parent.value) {
+	if (node.parent?.mounted && isImplicitNode(node)) {
 		mountNodeTree(node)
 	}
 }
@@ -301,12 +308,4 @@ const refreshProps = node => {
 	return previousProps !== node.props
 }
 
-/**
- * @param {Maoka.Node<$Type, any>} node
- * @param {unknown} error
- */
-const handleNodeError = (node, error) => {
-	for (const handler of node.lifecycleHandlers.error) {
-		handler(error)
-	}
-}
+const isImplicitNode = node => node.value === node.parent?.value

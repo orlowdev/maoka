@@ -143,6 +143,127 @@ describe("maoka components", () => {
 		expect(refreshedNodes).toEqual([])
 	})
 
+	test("bubbles initial render errors to parent error handlers", () => {
+		const { parent, root } = createRoot()
+		const error = new Error("Render failed")
+		const handledErrors = []
+
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			descendantError.handle()
+			handledErrors.push({ selfError, descendantError })
+		})
+
+		const node = maoka.create(() => () => {
+			throw error
+		})()(root, parent)
+
+		expect(node.lastRenderResult).toBe(null)
+		expect(handledErrors).toEqual([
+			{
+				selfError: undefined,
+				descendantError: {
+					error,
+					handled: true,
+					handle: expect.any(Function),
+				},
+			},
+		])
+	})
+
+	test("continues bubbling child errors until a parent handles the container", () => {
+		const { parent, root } = createRoot()
+		const grandparent = {
+			...parent,
+			key: "grandparent",
+			parent: null,
+			children: [parent],
+			lifecycleHandlers: {
+				afterMount: [],
+				beforeRefresh: [],
+				error: [],
+				beforeUnmount: [],
+				afterUnmount: [],
+			},
+		}
+		const error = new Error("Render failed")
+		const handledErrors = []
+
+		parent.parent = grandparent
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			handledErrors.push({
+				owner: "parent",
+				selfError,
+				error: descendantError.error,
+				handled: descendantError.handled,
+			})
+		})
+		grandparent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			descendantError.handle()
+			handledErrors.push({
+				owner: "grandparent",
+				selfError,
+				error: descendantError.error,
+				handled: descendantError.handled,
+			})
+		})
+
+		maoka.create(() => () => {
+			throw error
+		})()(root, parent)
+
+		expect(handledErrors).toEqual([
+			{
+				owner: "parent",
+				selfError: undefined,
+				error,
+				handled: false,
+			},
+			{
+				owner: "grandparent",
+				selfError: undefined,
+				error,
+				handled: true,
+			},
+		])
+	})
+
+	test("throws child errors when parent error handlers do not handle the container", () => {
+		const { parent, root } = createRoot()
+		const error = new Error("Render failed")
+		const handledErrors = []
+
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			handledErrors.push({ selfError, descendantError })
+		})
+
+		expect(() =>
+			maoka.create(() => () => {
+				throw error
+			})()(root, parent),
+		).toThrow(error)
+		expect(handledErrors).toEqual([
+			{
+				selfError: undefined,
+				descendantError: {
+					error,
+					handled: false,
+					handle: expect.any(Function),
+				},
+			},
+		])
+	})
+
+	test("throws initial render errors when no error handler exists", () => {
+		const { parent, root } = createRoot()
+		const error = new Error("Render failed")
+
+		expect(() =>
+			maoka.create(() => () => {
+				throw error
+			})()(root, parent),
+		).toThrow(error)
+	})
+
 	test("props update the node key and refresh only when values change", () => {
 		const { parent, refreshedNodes, root } = createRoot()
 		let count = 1

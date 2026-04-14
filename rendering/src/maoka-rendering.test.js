@@ -21,6 +21,7 @@ const createNode = key => ({
 		afterUnmount: [],
 	},
 	mounted: false,
+	updateProps: () => {},
 })
 
 const createPropsNode = (key, getProps) => {
@@ -280,6 +281,178 @@ describe("createRoot", () => {
 		expect(handledErrors).toEqual([error])
 	})
 
+	test("bubbles renderer refresh errors to parent error handlers", () => {
+		const error = new Error("Refresh failed")
+		const handledErrors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {
+				throw error
+			},
+		})
+		const parent = createNode("parent")
+		const child = createNode("child")
+
+		child.parent = parent
+		parent.children.push(child)
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			descendantError.handle()
+			handledErrors.push({ selfError, descendantError })
+		})
+
+		root.refreshNode(child)
+		root.flushRefreshQueue()
+
+		expect(handledErrors).toEqual([
+			{
+				selfError: undefined,
+				descendantError: {
+					error,
+					handled: true,
+					handle: expect.any(Function),
+				},
+			},
+		])
+	})
+
+	test("continues bubbling renderer refresh errors until a parent handles the container", () => {
+		const error = new Error("Refresh failed")
+		const handledErrors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {
+				throw error
+			},
+		})
+		const grandparent = createNode("grandparent")
+		const parent = createNode("parent")
+		const child = createNode("child")
+
+		parent.parent = grandparent
+		child.parent = parent
+		grandparent.children.push(parent)
+		parent.children.push(child)
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			handledErrors.push({
+				owner: "parent",
+				selfError,
+				error: descendantError.error,
+				handled: descendantError.handled,
+			})
+		})
+		grandparent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			descendantError.handle()
+			handledErrors.push({
+				owner: "grandparent",
+				selfError,
+				error: descendantError.error,
+				handled: descendantError.handled,
+			})
+		})
+
+		root.refreshNode(child)
+		root.flushRefreshQueue()
+
+		expect(handledErrors).toEqual([
+			{
+				owner: "parent",
+				selfError: undefined,
+				error,
+				handled: false,
+			},
+			{
+				owner: "grandparent",
+				selfError: undefined,
+				error,
+				handled: true,
+			},
+		])
+	})
+
+	test("throws renderer refresh errors when parent handlers do not handle the container", () => {
+		const error = new Error("Refresh failed")
+		const handledErrors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {
+				throw error
+			},
+		})
+		const parent = createNode("parent")
+		const child = createNode("child")
+
+		child.parent = parent
+		parent.children.push(child)
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			handledErrors.push({ selfError, descendantError })
+		})
+
+		root.refreshNode(child)
+
+		expect(() => root.flushRefreshQueue()).toThrow(error)
+		expect(handledErrors).toEqual([
+			{
+				selfError: undefined,
+				descendantError: {
+					error,
+					handled: false,
+					handle: expect.any(Function),
+				},
+			},
+		])
+	})
+
+	test("keeps renderer refresh errors local when node has error handlers", () => {
+		const error = new Error("Refresh failed")
+		const parentHandledErrors = []
+		const childHandledErrors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {
+				throw error
+			},
+		})
+		const parent = createNode("parent")
+		const child = createNode("child")
+
+		child.parent = parent
+		parent.children.push(child)
+		parent.lifecycleHandlers.error.push((selfError, descendantError) => {
+			parentHandledErrors.push({ selfError, descendantError })
+		})
+		child.lifecycleHandlers.error.push((selfError, descendantError) => {
+			childHandledErrors.push({ selfError, descendantError })
+		})
+
+		root.refreshNode(child)
+		root.flushRefreshQueue()
+
+		expect(childHandledErrors).toEqual([
+			{ selfError: error, descendantError: undefined },
+		])
+		expect(parentHandledErrors).toEqual([])
+	})
+
+	test("throws renderer refresh errors when no error handler exists", () => {
+		const error = new Error("Refresh failed")
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {
+				throw error
+			},
+		})
+		const node = createNode("node")
+
+		root.refreshNode(node)
+
+		expect(() => root.flushRefreshQueue()).toThrow(error)
+	})
+
 	test("continues refreshing queued nodes after one node fails", () => {
 		const error = new Error("Refresh failed")
 		const refreshedNodes = []
@@ -381,6 +554,7 @@ describe("createRoot", () => {
 		expect(calls).toEqual([
 			"insert:child:into:parent",
 			"afterMount:child",
+			"insert:child:into:parent",
 		])
 
 		parent.lastRenderResult = []
@@ -390,6 +564,7 @@ describe("createRoot", () => {
 		expect(calls).toEqual([
 			"insert:child:into:parent",
 			"afterMount:child",
+			"insert:child:into:parent",
 			"afterMount-cleanup:child",
 			"remove:child",
 			"afterUnmount:child",

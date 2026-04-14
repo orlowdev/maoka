@@ -60,6 +60,12 @@ class FakeElement {
 	}
 
 	insertBefore(child, before) {
+		if (child === this || isAncestorOf(child, this)) {
+			throw new DOMException(
+				"Node.insertBefore: The new child is an ancestor of the parent",
+			)
+		}
+
 		if (child.parentNode) child.parentNode.removeChild(child)
 
 		const index = before ? this.childNodes.indexOf(before) : -1
@@ -93,6 +99,18 @@ class FakeText {
 }
 
 const createContainer = () => new FakeDocument().createElement("main")
+
+const isAncestorOf = (ancestor, child) => {
+	let parent = child.parentNode
+
+	while (parent) {
+		if (parent === ancestor) return true
+
+		parent = parent.parentNode
+	}
+
+	return false
+}
 
 describe("maokaDom.render", () => {
 	test("renders component templates into a DOM container", () => {
@@ -346,5 +364,26 @@ describe("maokaDom.render", () => {
 		expect(container.childNodes[0].textContent).toBe("Hello")
 		expect(container.childNodes[1].nodeType).toBe(3)
 		expect(container.childNodes[1].textContent).toBe(", Maoka")
+	})
+
+	test("renders nested create components without inserting parent DOM nodes into themselves", () => {
+		const container = createContainer()
+		const Hero = maoka.html.header(() => () => "Hero")
+		const Section = maoka.html.section(() => () => "Section")
+		const Page = maoka.create(() => () => [
+			maoka.html.main(() => () => [
+				maoka.create(() => () => [
+					Hero(),
+					Section(),
+				])(),
+			])(),
+		])
+
+		expect(() => render(container, Page)).not.toThrow()
+		expect(container.children.map(child => child.tagName)).toEqual(["main"])
+		expect(container.children[0].children.map(child => child.tagName)).toEqual([
+			"header",
+			"section",
+		])
 	})
 })

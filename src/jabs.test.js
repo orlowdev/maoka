@@ -86,4 +86,20 @@ describe("maoka jabs", () => {
 		expect(renderer.text()).toBe("1:1")
 		expect(renders).toBe(2)
 	})
+
+	test("errorBoundary handles errors from descendants", () => {
+		const error = new Error("Child failed")
+		const handledErrors = []
+		const BrokenChild = maoka.html.div(() => () => {
+			throw error
+		})
+		const Boundary = maoka.create(({ use }) => {
+			use(maoka.jabs.errorBoundary(error => handledErrors.push(error)))
+
+			return () => BrokenChild()
+		})
+
+		expect(() => render(Boundary)).not.toThrow()
+		expect(handledErrors).toEqual([error])
+	})
 })

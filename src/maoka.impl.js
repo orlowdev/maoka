@@ -67,6 +67,47 @@ export const updateNodeComponent = (node, component) => {
 	node.updateProps(component[COMPONENT_META]?.props)
 }
 
+/**
+ * @param {Maoka.Node} node
+ * @param {unknown} error
+ * @param {Maoka.DescendantError} [descendantError]
+ */
+export const handleNodeError = (node, error, descendantError) => {
+	if (!descendantError && node.lifecycleHandlers.error.length > 0) {
+		node.lifecycleHandlers.error.forEach(handler => handler(error))
+
+		return
+	}
+
+	if (node.parent) {
+		const bubbledError = descendantError ?? createDescendantError(error)
+
+		for (const handler of node.parent.lifecycleHandlers.error) {
+			handler(undefined, bubbledError)
+
+			if (bubbledError.handled) return
+		}
+
+		handleNodeError(node.parent, error, bubbledError)
+
+		return
+	}
+
+	throw error
+}
+
+const createDescendantError = error => {
+	const descendantError = {
+		error,
+		handled: false,
+		handle: () => {
+			descendantError.handled = true
+		},
+	}
+
+	return descendantError
+}
+
 export const html = HTML_TAGS.reduce((acc, tag) => {
 	acc[tag] = definition => pure(createTag("html", tag), definition)
 
@@ -194,7 +235,7 @@ const createBase = (
 		node.render = definition(params)
 		node.lastRenderResult = node.render()
 	} catch (error) {
-		node.lifecycleHandlers.error.forEach(handler => handler(error))
+		handleNodeError(node, error)
 	}
 
 	parent.children.push(node)

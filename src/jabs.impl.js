@@ -29,3 +29,19 @@ export const shouldComponentUpdate =
 			return shouldRefresh
 		})
 	}
+
+/**
+ * Handles descendant errors that were not handled by the component that failed.
+ *
+ * @type {(handler: (error: Error) => void) => Maoka.Jab<void, any>}
+ */
+export const errorBoundary =
+	handler =>
+	({ lifecycle }) => {
+		lifecycle.onError((_, descendantError) => {
+			if (!descendantError) return
+
+			handler(descendantError.error)
+			descendantError.handle()
+		})
+	}

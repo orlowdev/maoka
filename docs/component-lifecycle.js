@@ -30,8 +30,9 @@ const lifecycleExample = `const Component = maoka.create(({ lifecycle }) => {
 		// After remove node from tree.
 	})
 
-	lifecycle.onError(error => {
-		// Derive state from error here.
+	lifecycle.onError((error, descendantError) => {
+		// Own errors arrive as error.
+		// Descendant errors arrive as descendantError containers.
 	})
 
 	return () => {
@@ -150,8 +151,9 @@ const unmountExample = `const WindowSize = maoka.html.output(({ lifecycle, refre
 const errorExample = `const UserCard = maoka.html.article(({ lifecycle, props$, refresh$ }) => {
 	let errorMessage = ""
 
-	lifecycle.onError(error => {
-		errorMessage = error.message
+	lifecycle.onError((error, descendantError) => {
+		errorMessage = error?.message ?? descendantError.error.message
+		descendantError?.handle()
 		refresh$()
 	})
 
@@ -164,6 +166,14 @@ const errorExample = `const UserCard = maoka.html.article(({ lifecycle, props$, 
 
 		return user.name
 	}
+})`
+
+const errorBoundaryExample = `const UserBoundary = maoka.html.section(({ use }) => {
+	use(maoka.jabs.errorBoundary(error => {
+		console.info("User subtree failed", error)
+	}))
+
+	return () => UserCard()
 })`
 
 const beforeCreateExample = `const TraceablePanel = maoka.html.section(({ props$ }) => {
@@ -274,10 +284,11 @@ const Page = maoka.create(() => () => [
 					id: "error",
 					title: "onError hook",
 					body: [
-						"onError receives errors from lifecycle handlers and render work for this node. Use it to derive fallback state, report the failure, or request a controlled refresh. Register it during create so the component has a local recovery path.",
-						"Errors are routed to the node that owns the failing work. That makes fallback state ordinary component state instead of a separate global exception channel.",
+						"onError receives this node's own errors as the first argument. If a child fails without its own onError handler, the error bubbles upward in a descendant error container.",
+						"The container arrives as the second argument. It exposes the original error, whether it has been handled, and a handle method. Bubbling continues until a parent handler marks the container as handled; otherwise the error is thrown.",
+						"For subtree boundaries, prefer maoka.jabs.errorBoundary. It reads the descendant container, passes the original error to your handler, and marks the container as handled.",
 					],
-					code: errorExample,
+					code: `${errorExample}\n\n${errorBoundaryExample}`,
 				})),
 				Section(() => ({
 					id: "before-create",
