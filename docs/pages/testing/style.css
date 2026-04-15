@@ -45,8 +45,10 @@ li span {
 
 li strong {
 	color: var(--ink);
-	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-family: var(--font-mono);
+	font-feature-settings: "calt" 1;
 	font-size: 0.92rem;
+	font-variant-ligatures: contextual;
 }
 
 li span {

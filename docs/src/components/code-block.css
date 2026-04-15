@@ -18,7 +18,7 @@
 	border: 0;
 	background: transparent;
 	color: rgba(255, 255, 255, 0.32);
-	font-family: "Avenir Next Condensed", "Hiragino Sans", sans-serif;
+	font-family: var(--font-sans);
 	font-size: 1.3rem;
 	font-weight: 1000;
 	letter-spacing: 0.18em;
@@ -113,8 +113,10 @@ pre::before {
 }
 
 code {
-	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-family: var(--font-mono);
+	font-feature-settings: "calt" 1;
 	font-size: 0.86rem;
+	font-variant-ligatures: contextual;
 	line-height: 1.65;
 	white-space: pre;
 }

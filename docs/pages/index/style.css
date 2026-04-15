@@ -18,7 +18,7 @@
 	background: transparent;
 	box-shadow: none;
 	color: var(--night);
-	font-family: "Avenir Next Condensed", "Hiragino Sans", sans-serif;
+	font-family: var(--font-sans);
 	font-size: 1rem;
 	font-weight: 1000;
 	letter-spacing: 0.12em;
@@ -118,8 +118,10 @@
 
 .philosophy-index {
 	color: var(--hot);
-	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-family: var(--font-mono);
+	font-feature-settings: "calt" 1;
 	font-size: 0.78rem;
+	font-variant-ligatures: contextual;
 	font-weight: 1000;
 	letter-spacing: 0.16em;
 	text-shadow:
@@ -181,8 +183,10 @@
 		0 18px 44px rgba(21, 18, 42, 0.2),
 		0 0 38px rgba(168, 255, 207, 0.28);
 	color: #a8ffcf;
-	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-family: var(--font-mono);
+	font-feature-settings: "calt" 1;
 	font-size: clamp(1rem, 3vw, 1.55rem);
+	font-variant-ligatures: contextual;
 	font-weight: 900;
 	place-items: center;
 	text-shadow:

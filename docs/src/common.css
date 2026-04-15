@@ -1,7 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Literata:wght@400;500;600;700;800;900&display=swap");
+
 :root {
 	color: #15122a;
 	background: #f7f5ff;
-	font-family: "Hiragino Sans", "Yu Gothic", "Avenir Next", sans-serif;
+	font-family: var(--font-editorial);
+	--font-sans: "Inter", "SF Pro", system-ui;
+	--font-editorial: "Literata", "Georgia", serif;
+	--font-mono: "Fira Code", monospace;
 	--ink: #15122a;
 	--muted: #635f86;
 	--panel: rgba(255, 255, 255, 0.78);
@@ -62,13 +67,13 @@ body::after {
 		0 0 0 8px rgba(255, 255, 255, 0.28),
 		0 24px 60px rgba(118, 87, 255, 0.22);
 	color: var(--hot);
-	content: "사할린";
+	content: "Маока";
 	display: grid;
-	font-family: "Avenir Next Condensed", "Hiragino Sans", sans-serif;
-	font-size: 1.26rem;
-	font-weight: 1000;
-	letter-spacing: 0.12em;
-	line-height: 0.88;
+	font-family: var(--font-sans);
+	font-size: 1.24rem;
+	font-weight: 900;
+	letter-spacing: 0.04em;
+	line-height: 0.92;
 	place-items: center;
 	text-align: center;
 	white-space: pre;
@@ -129,6 +134,7 @@ header::after {
 .eyebrow {
 	margin: 0 0 12px;
 	color: var(--hot);
+	font-family: var(--font-sans);
 	font-size: 0.76rem;
 	font-weight: 1000;
 	letter-spacing: 0.24em;
@@ -140,13 +146,14 @@ h2 {
 	margin: 0;
 	color: var(--ink);
 	font-weight: 1000;
-	letter-spacing: -0.06em;
+	letter-spacing: -0.04em;
 }
 
 h1 {
+	font-family: var(--font-sans);
 	max-width: 760px;
 	font-size: clamp(2.4rem, 5vw, 4.2rem);
-	line-height: 0.98;
+	line-height: 1;
 	text-shadow: 0.035em 0.035em 0 rgba(0, 194, 255, 0.22);
 }
 
@@ -154,6 +161,7 @@ h2 {
 	margin-top: 44px;
 	padding-top: 20px;
 	border-top: 1px solid var(--line);
+	font-family: var(--font-sans);
 	font-size: clamp(1.55rem, 3vw, 2.25rem);
 	line-height: 1.08;
 }
@@ -161,13 +169,16 @@ h2 {
 h2::before {
 	color: var(--hot);
 	content: "# ";
-	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-family: var(--font-mono);
+	font-feature-settings: "calt" 1;
+	font-variant-ligatures: contextual;
 	letter-spacing: 0;
 }
 
 h3 {
 	margin: 0;
 	color: var(--night);
+	font-family: var(--font-sans);
 	font-size: 1.08rem;
 	font-weight: 1000;
 	letter-spacing: -0.02em;
@@ -182,6 +193,7 @@ article > section:first-of-type h2 {
 p,
 li {
 	color: var(--muted);
+	font-family: var(--font-editorial);
 	font-size: 1rem;
 	line-height: 1.78;
 }

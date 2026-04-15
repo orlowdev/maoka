@@ -9,6 +9,7 @@ aside {
 	display: inline-grid;
 	margin-bottom: 28px;
 	color: var(--ink);
+	font-family: var(--font-sans);
 	font-size: 1.4rem;
 	font-weight: 1000;
 	letter-spacing: 0.16em;
@@ -38,7 +39,8 @@ nav {
 .sections-nav::before {
 	margin-bottom: 8px;
 	color: var(--hot);
-	content: "On this page";
+	content: "On this page / глава";
+	font-family: var(--font-sans);
 	font-size: 0.72rem;
 	font-weight: 1000;
 	letter-spacing: 0.18em;
