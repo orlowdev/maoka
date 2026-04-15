@@ -2,7 +2,6 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 
 const pages = [
 	"index",
-	"getting-started",
 	"component-lifecycle",
 	"jabs",
 	"testing",
