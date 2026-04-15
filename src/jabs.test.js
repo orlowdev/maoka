@@ -35,15 +35,14 @@ describe("maoka jabs", () => {
 		expect(renders).toBe(1)
 	})
 
-	test("shouldComponentUpdate refreshes only when the comparison returns true", () => {
+	test("shouldComponentRefresh refreshes only when the comparison returns true", () => {
 		let props = { important: 0, ignored: 0 }
 		let refresh
 		let renders = 0
 		const Counter = maoka.html.div(({ props$, use }) => {
 			use(
-				maoka.jabs.shouldComponentUpdate(
-					(prevProps, nextProps) =>
-						prevProps.important !== nextProps.important,
+				maoka.jabs.shouldComponentRefresh(
+					(prevProps, nextProps) => prevProps.important !== nextProps.important,
 				),
 			)
 

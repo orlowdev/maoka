@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import { createRoot } from "../index.js"
+import { pure } from "../../src/maoka.impl.js"
 
 const createNode = key => ({
 	key,
@@ -40,6 +41,17 @@ const createPropsNode = (key, getProps) => {
 	}
 
 	return node
+}
+
+const createDeferred = () => {
+	let resolve
+	let reject
+	const promise = new Promise((resolvePromise, rejectPromise) => {
+		resolve = resolvePromise
+		reject = rejectPromise
+	})
+
+	return { promise, resolve, reject }
 }
 
 describe("createRoot", () => {
@@ -257,6 +269,147 @@ describe("createRoot", () => {
 		expect(refreshCalls).toEqual(["first", "second"])
 		expect(handledErrors).toEqual([error])
 		expect(refreshedNodes).toEqual([node])
+	})
+
+	test("renders before and after async refresh continuations", async () => {
+		const deferred = createDeferred()
+		const refreshedValues = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: node => void refreshedValues.push(node.lastRenderResult),
+		})
+		const node = createNode("node")
+		let value = "loading"
+
+		node.render = () => value
+		node.lifecycleHandlers.beforeRefresh.push(() => async () => {
+			await deferred.promise
+			value = "ready"
+
+			return true
+		})
+
+		root.refreshNode(node)
+		root.flushRefreshQueue()
+
+		expect(refreshedValues).toEqual(["loading"])
+
+		deferred.resolve()
+		await deferred.promise
+		await Promise.resolve()
+
+		expect(refreshedValues).toEqual(["loading", "ready"])
+	})
+
+	test("routes async refresh continuation errors to node error handlers", async () => {
+		const error = new Error("Async refresh failed")
+		const handledErrors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {},
+		})
+		const node = createNode("node")
+
+		node.lifecycleHandlers.beforeRefresh.push(() => async () => {
+			throw error
+		})
+		node.lifecycleHandlers.error.push(handledError => {
+			handledErrors.push(handledError)
+		})
+
+		root.refreshNode(node)
+		root.flushRefreshQueue()
+		await Promise.resolve()
+
+		expect(handledErrors).toEqual([error])
+	})
+
+	test("queues refresh requests from refresh handlers for the next flush", async () => {
+		const deferred = createDeferred()
+		const refreshedValues = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: node => void refreshedValues.push(node.lastRenderResult),
+		})
+		const node = createNode("node")
+		let isLoading = false
+		let value = "idle"
+
+		node.root = root
+		node.refresh$ = () => root.refreshNode(node)
+		node.render = () => (isLoading ? "Loading..." : value)
+		node.lifecycleHandlers.beforeRefresh.push(() => {
+			if (!isLoading) {
+				isLoading = true
+				node.refresh$()
+
+				return false
+			}
+
+			return async () => {
+				await deferred.promise
+				value = "ready"
+				isLoading = false
+
+				return true
+			}
+		})
+
+		root.refreshNode(node)
+		root.flushRefreshQueue()
+
+		expect(refreshedValues).toEqual([])
+
+		await Promise.resolve()
+
+		expect(refreshedValues).toEqual(["Loading..."])
+
+		deferred.resolve()
+		await deferred.promise
+		await Promise.resolve()
+
+		expect(refreshedValues).toEqual(["Loading...", "ready"])
+	})
+
+	test("refreshes children after async refresh continuations update props", async () => {
+		const deferred = createDeferred()
+		const refreshedValues = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: node => void refreshedValues.push(node.lastRenderResult),
+		})
+		const Child = pure("child", ({ props$ }) => () => {
+			return `Child: ${props$().count}`
+		})
+		const parent = createNode("parent")
+		let childCount = 0
+
+		parent.root = root
+		parent.render = () => Child(() => ({ key: "child", count: childCount }))
+		parent.lastRenderResult = parent.render()
+		parent.lifecycleHandlers.beforeRefresh.push(() => async () => {
+			await deferred.promise
+			childCount = 1
+
+			return true
+		})
+
+		root.mountNode(parent)
+
+		refreshedValues.length = 0
+		root.refreshNode(parent)
+		root.flushRefreshQueue()
+
+		deferred.resolve()
+		await deferred.promise
+		await Promise.resolve()
+		await Promise.resolve()
+
+		expect(refreshedValues).toEqual(["Child: 1"])
 	})
 
 	test("routes renderer refresh errors to node error handlers", () => {

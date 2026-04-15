@@ -36,7 +36,7 @@ export namespace Maoka {
 
 	type Jabs = {
 		noRefresh: Jab
-		shouldComponentUpdate: <$Props extends BaseProps = NoProps>(
+		shouldComponentRefresh: <$Props extends BaseProps = NoProps>(
 			compare: (prevProps: $Props, nextProps: $Props) => boolean,
 		) => Jab<any, $Props>
 		errorBoundary: (handler: (error: Error) => void) => Jab
@@ -44,7 +44,12 @@ export namespace Maoka {
 
 	type Refresh$ = () => void
 
-	type BeforeRefreshHandler = () => boolean | void
+	type BeforeRefreshContinuation = () => boolean | void | Promise<boolean | void>
+
+	type BeforeRefreshHandler = () =>
+		| boolean
+		| void
+		| BeforeRefreshContinuation
 
 	type DescendantError = {
 		error: Error
@@ -52,10 +57,7 @@ export namespace Maoka {
 		handle: () => void
 	}
 
-	type ErrorHandler = (
-		error?: Error,
-		descendantError?: DescendantError,
-	) => void
+	type ErrorHandler = (error?: Error, descendantError?: DescendantError) => void
 
 	type AfterUnmountHandler = () => void
 

@@ -11,6 +11,7 @@ import {
 } from "../../src/maoka.impl.js"
 
 const Text = pure("#text", ({ props$ }) => () => props$().value)
+const refreshVersions = new WeakMap()
 
 /**
  * Creates a renderer-agnostic Maoka root.
@@ -21,6 +22,7 @@ const Text = pure("#text", ({ props$ }) => () => props$().value)
  */
 export const createRoot = options => {
 	const refreshQueue = new Map()
+	const nextRefreshQueue = new Map()
 	const createKey = options.createKey ?? createKeyFactory()
 	const scheduleRefresh = options.scheduleRefresh ?? queueMicrotaskScheduler
 	const cancelRefresh = options.cancelRefresh ?? noop
@@ -28,6 +30,7 @@ export const createRoot = options => {
 		...options,
 		insertNode: options.insertNode ?? noop,
 		removeNode: options.removeNode ?? noop,
+		queueRefresh,
 	}
 	let scheduledRefresh = null
 	let scheduled = false
@@ -64,7 +67,9 @@ export const createRoot = options => {
 
 						if (refreshNode(node, renderer, force)) {
 							refreshedNodes.add(node)
-							node.children.forEach(child => queueRefresh(child, false))
+							node.children.forEach(child =>
+								queueCurrentRefresh(child, false),
+							)
 						}
 					}
 				}
@@ -72,6 +77,16 @@ export const createRoot = options => {
 				flushing = false
 				scheduled = false
 				scheduledRefresh = null
+
+				if (nextRefreshQueue.size) {
+					for (const [node, force] of nextRefreshQueue) {
+						refreshQueue.set(node, refreshQueue.get(node) || force)
+					}
+
+					nextRefreshQueue.clear()
+					scheduled = true
+					scheduledRefresh = scheduleRefresh(root.flushRefreshQueue)
+				}
 			}
 		},
 	}
@@ -79,12 +94,18 @@ export const createRoot = options => {
 	return root
 
 	function queueRefresh(node, force) {
-		refreshQueue.set(node, refreshQueue.get(node) || force)
+		const queue = flushing ? nextRefreshQueue : refreshQueue
+
+		queue.set(node, queue.get(node) || force)
 
 		if (!scheduled && !flushing) {
 			scheduled = true
 			scheduledRefresh = scheduleRefresh(root.flushRefreshQueue)
 		}
+	}
+
+	function queueCurrentRefresh(node, force) {
+		refreshQueue.set(node, refreshQueue.get(node) || force)
 	}
 }
 
@@ -104,14 +125,25 @@ const queueMicrotaskScheduler = flush => {
 	return null
 }
 
+const isRefreshContinuation = result => typeof result === "function"
+
 const refreshNode = (node, options, force) => {
 	if (!force && !refreshProps(node)) return false
 
+	const refreshVersion = bumpRefreshVersion(node)
 	let shouldRefresh = node.lifecycleHandlers.beforeRefresh.length === 0
+	const continuations = []
 
 	for (const handler of node.lifecycleHandlers.beforeRefresh) {
 		try {
-			if (handler() === true) shouldRefresh = true
+			const result = handler()
+
+			if (isRefreshContinuation(result)) {
+				continuations.push(result)
+				shouldRefresh = true
+			} else if (result === true) {
+				shouldRefresh = true
+			}
 		} catch (error) {
 			handleNodeError(node, error)
 		}
@@ -119,14 +151,56 @@ const refreshNode = (node, options, force) => {
 
 	if (!shouldRefresh) return true
 
+	renderNode(node, options)
+
+	void runRefreshContinuations(node, options, continuations, refreshVersion)
+
+	return true
+}
+
+const bumpRefreshVersion = node => {
+	const refreshVersion = (refreshVersions.get(node) ?? 0) + 1
+
+	refreshVersions.set(node, refreshVersion)
+
+	return refreshVersion
+}
+
+const renderNode = (node, options) => {
 	try {
 		node.lastRenderResult = node.render()
 		applyTemplate(node, options)
 	} catch (error) {
 		handleNodeError(node, error)
 	}
+}
 
-	return true
+const runRefreshContinuations = async (
+	node,
+	options,
+	continuations,
+	refreshVersion,
+) => {
+	let shouldRefresh = false
+
+	for (const continuation of continuations) {
+		try {
+			if (refreshVersions.get(node) !== refreshVersion) return
+
+			if ((await continuation()) === true) {
+				shouldRefresh = true
+			}
+		} catch (error) {
+			if (refreshVersions.get(node) !== refreshVersion) return
+
+			handleNodeError(node, error)
+		}
+	}
+
+	if (shouldRefresh && refreshVersions.get(node) === refreshVersion) {
+		renderNode(node, options)
+		node.children.forEach(child => options.queueRefresh(child, false))
+	}
 }
 
 const mountNode = (node, options) => {

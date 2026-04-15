@@ -15,7 +15,7 @@ export const noRefresh = ({ lifecycle }) => {
  *
  * @type {<$Props extends Maoka.BaseProps = Maoka.NoProps>(compare: (prevProps: $Props, nextProps: $Props) => boolean) => Maoka.Jab<void, $Props>}
  */
-export const shouldComponentUpdate =
+export const shouldComponentRefresh =
 	compare =>
 	({ lifecycle, props$ }) => {
 		let prevProps = props$()
