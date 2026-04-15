@@ -90,7 +90,7 @@ export namespace Maoka {
 
 	type ComponentDefinition<$Props extends BaseProps = NoProps, $Type = any> = (
 		params: Params<$Type, $Props>,
-	) => Render
+	) => Render | void
 
 	type BeforeCreateHandler<$Type = any, $Props extends BaseProps = NoProps> = (
 		params: Params<$Type, $Props>,
@@ -129,15 +129,15 @@ export namespace Maoka {
 
 	type Blueprint<$Props extends BaseProps = NoProps> = $Props extends NoProps
 		? (props?: Props<$Props>) => Maoka.Component<any, $Props>
-		: (props<$Props>) => Maoka.Component<any, $Props>
+		: (props: Props<$Props>) => Maoka.Component<any, $Props>
 
 	type Node<$Type = any, $Props extends BaseProps = NoProps> = {
 		key: Key
 		value: $Type
-		props: $Props
 		props: DefinitionProps<$Props>
 		root: Root<$Type>
 		render: Render
+		hasRenderPhase: boolean
 		lastRenderResult: Template
 		parent: Node<$Type, any>
 		children: Node<$Type, any>[]

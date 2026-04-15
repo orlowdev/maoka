@@ -104,8 +104,6 @@ const FocusInput = maoka.html.input(({ use, value }) => {
 	)
 
 	value.type = "text"
-
-	return () => ""
 })
 
 render(document.body, FocusInput())`
@@ -164,7 +162,7 @@ const defaultMembers = [
 ): Maoka.Blueprint<$Props>`,
 		body: [
 			"Creates a component blueprint with no predefined renderer value. The returned blueprint is later called with a props provider and then instantiated by a renderer.",
-			"The definition runs during the create phase and must return a render function. Keys are supplied through the props provider and participate in child identity during reconciliation.",
+			"The definition runs during the create phase and may optionally return a render function. Keys are supplied through the props provider and participate in child identity during reconciliation.",
 		],
 		usage: [
 			"Use for structural or controller components that coordinate child output rather than binding themselves to a specific tag.",
@@ -484,7 +482,7 @@ type Render = () => Template`,
 	$Type = any,
 > = (
 	params: Params<$Type, $Props>,
-) => Render
+) => Render | void
 
 type BeforeCreateHandler<
 	$Type = any,
@@ -650,7 +648,7 @@ type MathMlTag = keyof MathMLElementTagNameMap`,
 ]
 
 const behaviorNotes = [
-	"Component definitions run once per node and must return a render function.",
+	"Component definitions run once per node and may omit the render phase when they do not need to produce output.",
 	"`props()` is a provider that yields the current normalized props object, not a snapshot captured at blueprint creation time.",
 	"`refresh$()` schedules a refresh through the active root or renderer rather than forcing immediate synchronous rendering.",
 	"`use(jab)` executes the jab during the create phase and returns the jab result immediately.",

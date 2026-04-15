@@ -36,7 +36,7 @@ const runtimeFeatures = [
 		slot: "is-pos-2",
 		tilt: "is-tilt-right",
 		title: "Creation and render are separate",
-		body: "The component definition runs once and returns a render function. State, lifecycle handlers, and behavior are captured during creation; output is produced later by render.",
+		body: "The component definition runs once. It may return a render function when the component needs output; otherwise the component can stay create-only. State, lifecycle handlers, and behavior are captured during creation.",
 	},
 	{
 		slot: "is-pos-3",

@@ -144,6 +144,7 @@ const createBase = (
 	type,
 	beforeCreateHandlers,
 ) => {
+	const NO_RENDER_PHASE = () => undefined
 	let key = root.createKey()
 	let initialized = false
 	let propsSource = initialProps
@@ -179,7 +180,8 @@ const createBase = (
 	const node = {
 		key,
 		value,
-		render: () => undefined,
+		render: NO_RENDER_PHASE,
+		hasRenderPhase: false,
 		lastRenderResult: null,
 		root,
 		parent,
@@ -229,8 +231,15 @@ const createBase = (
 	try {
 		props()
 		beforeCreateHandlers.forEach(handler => handler(params))
-		node.render = definition(params)
-		node.lastRenderResult = node.render()
+		const render = definition(params)
+
+		if (typeof render === "function") {
+			node.render = render
+			node.hasRenderPhase = true
+			node.lastRenderResult = node.render()
+		} else {
+			node.lastRenderResult = undefined
+		}
 	} catch (error) {
 		handleNodeError(node, error)
 	}

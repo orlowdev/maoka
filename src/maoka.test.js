@@ -37,6 +37,7 @@ const createRoot = () => {
 			afterUnmount: [],
 		},
 		mounted: true,
+		hasRenderPhase: true,
 	}
 
 	return { createdValueTags, parent, refreshedNodes, root }
@@ -142,6 +143,26 @@ describe("maoka components", () => {
 		expect(node.key).toBe("custom-key")
 		expect(node.lastRenderResult).toBe("custom-key")
 		expect(refreshedNodes).toEqual([])
+	})
+
+	test("allows definitions without a render phase", () => {
+		const { parent, refreshedNodes, root } = createRoot()
+		const beforeUnmount = () => {}
+
+		const node = maoka.create(({ lifecycle, value }) => {
+			value.ready = true
+			lifecycle.beforeUnmount(beforeUnmount)
+		})()(root, parent)
+
+		expect(node.hasRenderPhase).toBe(false)
+		expect(node.lastRenderResult).toBe(undefined)
+		expect(node.render()).toBe(undefined)
+		expect(node.children).toEqual([])
+		expect(node.lifecycleHandlers.beforeUnmount).toEqual([beforeUnmount])
+		expect(node.value).toEqual({ tag: "parent", ready: true })
+
+		node.refresh$()
+		expect(refreshedNodes).toEqual([node])
 	})
 
 	test("bubbles initial render errors to parent error handlers", () => {

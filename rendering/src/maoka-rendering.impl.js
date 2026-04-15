@@ -216,6 +216,12 @@ const mountNode = (node, options) => {
 }
 
 const applyTemplate = (node, options) => {
+	if (node.hasRenderPhase === false) {
+		removeChildren(node, options)
+
+		return
+	}
+
 	if (Array.isArray(node.lastRenderResult)) {
 		applyTemplateList(node, node.lastRenderResult, options)
 

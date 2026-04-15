@@ -209,6 +209,37 @@ describe("maoka test renderer", () => {
 		expect(calls).toEqual(["afterMount:app"])
 	})
 
+	test("supports components without a render phase", () => {
+		const calls = []
+		const Silent = maoka.create(({ lifecycle }) => {
+			lifecycle.afterMount(() => {
+				calls.push("afterMount:silent")
+			})
+		})
+		const App = maoka.create(() => () => [
+			maoka.html.div(() => () => "A")(),
+			Silent(() => ({ key: "silent" })),
+			maoka.html.div(() => () => "B")(),
+		])
+		const renderer = render(App)
+
+		expect(renderer.text()).toBe("AB")
+		expect(renderer.toJSON()).toEqual({
+			tag: "root",
+			children: [
+				{
+					tag: "div",
+					text: "A",
+				},
+				{
+					tag: "div",
+					text: "B",
+				},
+			],
+		})
+		expect(calls).toEqual(["afterMount:silent"])
+	})
+
 	test("runs jabs with real params, props, lifecycle, and refresh", () => {
 		let count = 1
 		const useCounter = ({ lifecycle, props, refresh$ }) => {

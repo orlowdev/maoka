@@ -36,6 +36,8 @@ const lifecycleExample = `const Component = maoka.create(({ lifecycle }) => {
 		// Descendant errors arrive as descendantError containers.
 	})
 
+	// Optional render phase. Return it only when this component
+	// needs to produce text or child templates.
 	return () => {
 		// Render phase. Runs on creation and on every refresh
 		// that was not skipped by a beforeRefresh handler.
@@ -92,8 +94,6 @@ const mountExample = `const AutoFocusInput = maoka.html.input(({ lifecycle, valu
 		value.focus()
 		value.scrollIntoView({ block: "nearest" })
 	})
-
-	return () => ""
 })`
 
 const refreshExample = `const Digit = maoka.html.span(({ lifecycle, props }) => {
@@ -246,7 +246,7 @@ const Page = maoka.create(() => () => [
 					title: "Create phase",
 					body: [
 						"Create phase is the component definition call. It always runs once for a node, before the first render result is applied. Put stable wiring here: local state, event callbacks, lifecycle registration, and jabs that should attach to this node.",
-						"Create is a good place for values that should survive many renders. The returned render function closes over those values and reads the current props when it needs them.",
+						"Create is a good place for values that should survive many renders. When a component returns a render function, that function closes over those values and reads the current props when it needs them.",
 					],
 					code: createExample,
 				})),
@@ -254,7 +254,7 @@ const Page = maoka.create(() => () => [
 					id: "render",
 					title: "Render phase",
 					body: [
-						"Render phase is the function returned from create. It runs once during creation and then again when the node refreshes and beforeRefresh does not skip the render.",
+						"Render phase is an optional function returned from create. When present, it runs once during creation and then again when the node refreshes and beforeRefresh does not skip the render.",
 						"Render should describe the current output: text, child components, empty values, or mixed renderable lists. Keep durable setup out of render; put that work in create or lifecycle hooks instead.",
 					],
 					code: renderExample,
