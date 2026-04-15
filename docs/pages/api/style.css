@@ -1,0 +1,172 @@
+@import "../../src/common.css";
+
+.api-page section + section {
+	margin-top: 26px;
+}
+
+.api-page,
+.api-page section,
+.api-grid,
+.type-grid,
+.tag-grid {
+	width: 100%;
+	min-width: 0;
+}
+
+.api-page h3 {
+	margin-top: 26px;
+}
+
+.scope-note,
+.api-card,
+.type-group,
+.tag-group,
+.behavior-list,
+.signature-list {
+	width: 100%;
+	max-width: 100%;
+	padding: 18px 20px;
+	border: 1px solid var(--line);
+	border-radius: 18px;
+	background: var(--panel);
+	backdrop-filter: blur(14px);
+}
+
+.scope-note p:first-child,
+.api-card p:first-child,
+.type-group p:first-child,
+.tag-group p:first-child {
+	margin-top: 0;
+}
+
+.eyebrow.is-soft {
+	color: var(--aqua);
+}
+
+.signature-list,
+.behavior-list {
+	margin: 16px 0 0;
+}
+
+.signature-list {
+	padding: 18px 20px 20px;
+}
+
+.signature-list p {
+	margin: 0 0 12px;
+}
+
+.signature-list code,
+.behavior-list code,
+.api-card code,
+.scope-note code,
+.tag-list code {
+	font-family: var(--font-mono);
+	font-size: 0.95em;
+}
+
+.signature-list code,
+.exports-table code {
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.api-grid,
+.type-grid,
+.tag-grid {
+	display: grid;
+	gap: 16px;
+}
+
+.tag-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 14px;
+}
+
+.tag-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 10px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.72);
+	color: var(--ink);
+	font-family: var(--font-mono);
+	font-size: 0.78rem;
+}
+
+.imports-block {
+	margin-top: 16px;
+}
+
+.exports-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 16px;
+	font-family: var(--font-sans);
+}
+
+.exports-table th,
+.exports-table td {
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--line);
+	vertical-align: top;
+	text-align: left;
+}
+
+.exports-table th {
+	color: var(--ink);
+	font-size: 0.78rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.exports-table td {
+	color: var(--muted);
+	font-size: 0.94rem;
+	line-height: 1.6;
+}
+
+.exports-table tr:last-child td {
+	border-bottom: 0;
+}
+
+.exports-table code {
+	color: var(--ink);
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+}
+
+.section-intro {
+	margin-top: 12px;
+}
+
+@media (max-width: 860px) {
+	.exports-table,
+	.exports-table tbody,
+	.exports-table tr,
+	.exports-table td {
+		display: block;
+	}
+
+	.exports-table thead {
+		display: none;
+	}
+
+	.exports-table tr {
+		padding: 14px 0;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.exports-table tr:last-child {
+		border-bottom: 0;
+	}
+
+	.exports-table td {
+		padding: 6px 0;
+		border-bottom: 0;
+	}
+}

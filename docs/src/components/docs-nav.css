@@ -1,6 +1,8 @@
 aside {
 	position: sticky;
 	top: 24px;
+	width: 100%;
+	min-width: 0;
 	padding: 16px 0 0 16px;
 	border-left: 3px solid var(--hot);
 }
@@ -48,11 +50,14 @@ nav {
 }
 
 nav a {
+	display: block;
+	min-width: 0;
 	color: var(--muted);
 	font-size: 0.94rem;
 	font-weight: 900;
 	text-decoration: none;
 	text-underline-offset: 0.32em;
+	overflow-wrap: anywhere;
 }
 
 .section-link-depth-3 {

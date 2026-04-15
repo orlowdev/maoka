@@ -68,6 +68,10 @@
 	pointer-events: none;
 }
 
+.code-panel.is-flat::after {
+	display: none;
+}
+
 pre {
 	position: relative;
 	margin: 0;
@@ -110,6 +114,12 @@ pre::before {
 	box-shadow:
 		-18px 24px 48px var(--active-code-glow),
 		0 24px 70px rgba(21, 18, 42, 0.16),
+		inset 0 1px 0 rgba(255, 255, 255, 0.12),
+		inset -1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.code-panel.is-flat pre {
+	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.12),
 		inset -1px 0 0 rgba(255, 255, 255, 0.12);
 }
@@ -171,6 +181,16 @@ code {
 
 .syntax-function {
 	color: #65e6ff;
+}
+
+.syntax-property {
+	color: #ffb86b;
+	font-weight: 700;
+}
+
+.syntax-type {
+	color: #8dd6ff;
+	font-weight: 700;
 }
 
 .syntax-number,

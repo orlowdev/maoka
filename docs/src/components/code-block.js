@@ -7,10 +7,12 @@ const refreshSubscribers = new Set()
 const keywords = new Set([
 	"as",
 	"const",
+	"extends",
 	"export",
 	"from",
 	"function",
 	"get",
+	"interface",
 	"import",
 	"let",
 	"return",
@@ -50,7 +52,11 @@ export const CodeBlock = maoka.html.section(
 
 			return [
 				LanguageTabs(() => ({ language, props: p, select })),
-				CodePanel(() => ({ code, language })),
+				CodePanel(() => ({
+					code,
+					language,
+					noShadow: p.noShadow,
+				})),
 			]
 		}
 	},
@@ -104,7 +110,13 @@ const CodePanel = maoka.html.div(({ props, value }) => {
 	return () => {
 		const p = props()
 
-		value.className = `code-panel is-${p.language}`
+		value.className = [
+			"code-panel",
+			`is-${p.language}`,
+			p.noShadow ? "is-flat" : "",
+		]
+			.filter(Boolean)
+			.join(" ")
 
 		return [Pre(() => ({ code: p.code }))]
 	}
@@ -209,7 +221,7 @@ const tokenize = code => {
 			const end = findIdentifierEnd(code, index)
 			const value = code.slice(index, end)
 
-			push(tokens, value, getIdentifierClass(code, end, value))
+			push(tokens, value, getIdentifierClass(code, index, end, value))
 			index = end
 			continue
 		}
@@ -286,13 +298,37 @@ const findNumberEnd = (code, index) => {
 	return cursor
 }
 
-const getIdentifierClass = (code, end, value) => {
+const getIdentifierClass = (code, start, end, value) => {
 	if (includesMaoka(value)) return "syntax-maoka"
+	if (isObjectKey(code, start, end, value)) return "syntax-property"
+	if (isTypeIdentifier(code, start, end, value)) return "syntax-type"
 	if (keywords.has(value)) return "syntax-keyword"
 	if (booleans.has(value)) return "syntax-boolean"
 	if (isFunctionIdentifier(code, end, value)) return "syntax-function"
 
 	return ""
+}
+
+const isObjectKey = (code, start, end, value) => {
+	if (keywords.has(value)) return false
+
+	const previous = findPreviousSignificantChar(code, start)
+	const next = findNextSignificantChar(code, end)
+
+	if (previous === ".") return false
+
+	return next === ":"
+}
+
+const isTypeIdentifier = (code, start, end, value) => {
+	if (keywords.has(value) || booleans.has(value)) return false
+
+	const nextWord = findNextWord(code, end)
+
+	if (value.startsWith("$")) return true
+	if (nextWord === "extends") return true
+
+	return false
 }
 
 const isFunctionIdentifier = (code, end, value) => {
@@ -304,6 +340,35 @@ const isFunctionIdentifier = (code, end, value) => {
 
 	return code[cursor] === "("
 }
+
+const findPreviousSignificantChar = (code, index) => {
+	let cursor = index - 1
+
+	while (cursor >= 0 && /\s/.test(code[cursor])) cursor--
+
+	return cursor >= 0 ? code[cursor] : ""
+}
+
+const findNextSignificantChar = (code, index) => {
+	let cursor = index
+
+	while (cursor < code.length && /\s/.test(code[cursor])) cursor++
+
+	return cursor < code.length ? code[cursor] : ""
+}
+
+const findNextWord = (code, index) => {
+	let cursor = index
+
+	while (cursor < code.length && /\s/.test(code[cursor])) cursor++
+
+	if (!isIdentifierStart(code[cursor])) return ""
+
+	const end = findIdentifierEnd(code, cursor)
+
+	return code.slice(cursor, end)
+}
+
 
 const getBracketClass = depth =>
 	`syntax-bracket syntax-bracket-${((depth - 1) % 4) + 1}`

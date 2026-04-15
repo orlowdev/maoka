@@ -52,9 +52,15 @@ main {
 	align-items: start;
 }
 
+.docs-layout > * {
+	min-width: 0;
+}
+
 article,
 .demo-page {
+	width: 100%;
 	max-width: 780px;
+	min-width: 0;
 }
 
 header {
