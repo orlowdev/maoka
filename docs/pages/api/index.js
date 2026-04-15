@@ -93,6 +93,39 @@ const jabsExampleTs = `const Price = maoka.html.output<{ value: number }>(({ pro
 	return () => \`$\${props().value}\`
 })`
 
+const domRenderExampleTs = `import maoka from "maoka"
+import maokaDom, { render, type MaokaDom } from "maoka/dom"
+
+const FocusInput = maoka.html.input(({ use, value }) => {
+	use(
+		maokaDom.jabs.ifInDOM<HTMLElement>(({ value }) => {
+			value.focus()
+		}),
+	)
+
+	value.type = "text"
+
+	return () => ""
+})
+
+render(document.body, FocusInput())`
+
+const testRenderExampleTs = `import maoka from "maoka"
+import { render, renderJab } from "maoka/test"
+
+const Label = maoka.html.span<{ text: string }>(
+	({ props }) => () => props().text,
+)
+
+const screen = render(Label(() => ({ text: "Ready" })))
+screen.text()
+
+const probe = renderJab(({ refresh$ }) => ({
+	trigger: refresh$,
+}))
+probe.result().trigger()
+probe.flush()`
+
 const exportsRows = [
 	{
 		exportName: "default",
@@ -285,6 +318,48 @@ const constantGroups = [
 		body:
 			"Ordered runtime list of MathML tag members exported by `maoka.math`. Use it when code must enumerate supported MathML factories without hardcoded tag inventories.",
 		tags: MAOKA.MATH_TAGS,
+	},
+]
+
+const subpackages = [
+	{
+		id: "subpackage-dom",
+		title: "`maoka/dom`",
+		importLine: `import maokaDom, { render, type MaokaDom } from "maoka/dom"`,
+		body: [
+			"DOM adapter for Maoka components. It renders a root component into a concrete DOM container and exposes a small DOM-specific jab namespace through the default export.",
+			"The package is intended for browser rendering. It bridges Maoka nodes to DOM elements, schedules refresh through `requestAnimationFrame` when available, and creates HTML, SVG, and MathML nodes with the correct namespace behavior.",
+		],
+		runtime: [
+			"`render(container, component, options?) => Maoka.Root<Element>` mounts a blueprint or component into a DOM container.",
+			"`default maokaDom` currently exposes `maokaDom.jabs.ifInDOM`, a DOM-only jab helper.",
+		],
+		types: [
+			"`namespace MaokaDom` exports `IfInDom`, the type of the DOM guard jab factory.",
+			"`MaokaDomRenderOptions` currently exposes `createKey?: () => Maoka.Key`.",
+		],
+		code: domRenderExampleTs,
+	},
+	{
+		id: "subpackage-test",
+		title: "`maoka/test`",
+		importLine: `import { render, renderJab, setup } from "maoka/test"`,
+		body: [
+			"In-memory test renderer for Maoka components and jabs. It runs reconciliation, lifecycle, props updates, and refresh flow without a browser or DOM shim.",
+			"The package is intended for unit tests and behavior probes. It returns renderer helpers for tree traversal, text extraction, JSON serialization, and direct jab execution inside a real component context.",
+		],
+		runtime: [
+			"`createValue(tag) => MaokaTestValue` creates an in-memory renderer value.",
+			"`render(component, options?) => MaokaTestRenderer` mounts a component and returns helpers such as `flush`, `text`, `find`, `findByTag`, and `toJSON`.",
+			"`renderJab(jab, options?) => MaokaTestJabRenderer<$Return>` runs a jab inside a probe component and exposes both `params()` and `result()`.",
+			"`setup` is an alias of `renderJab`.",
+		],
+		types: [
+			"`MaokaTestValue` models a tree node with `tag`, `text`, `parent`, `children`, and arbitrary extra fields.",
+			"`MaokaTestJson` is the serialized snapshot shape returned by `toJSON()`.",
+			"`MaokaTestRenderer`, `MaokaTestJabRenderer<$Return>`, `MaokaTestRenderOptions`, and `MaokaTestJabOptions<$Return>` describe the test helpers and options surface.",
+		],
+		code: testRenderExampleTs,
 	},
 ]
 
@@ -595,6 +670,7 @@ const Page = maoka.create(() => () => [
 				return () => [
 					Hero(),
 					ScopeSection(),
+					SubpackagesSection(),
 					ExportsSection(),
 					DefaultExportSection(),
 					ConstantsSection(),
@@ -636,7 +712,7 @@ const ScopeSection = maoka.html.section(({ value }) => {
 				)(),
 				maoka.html.p(
 					() => () =>
-						"Subpath packages such as `maoka/dom`, `maoka/test`, and `maoka/rendering` are intentionally excluded. Type signatures are aligned with `maoka.d.ts`, while runtime behavior notes are derived from `index.js`, `src/maoka.impl.js`, and `src/jabs.impl.js`.",
+						"The main reference below remains focused on the root entrypoint. A separate section on this page summarizes the related `maoka/dom` and `maoka/test` subpackages, while `maoka/rendering` remains excluded. Type signatures are aligned with `maoka.d.ts`, `dom/maoka-dom.d.ts`, and `test/maoka-test.d.ts` where applicable.",
 				)(),
 				maoka.html.div(({ value }) => {
 					value.className = "imports-block"
@@ -644,6 +720,25 @@ const ScopeSection = maoka.html.section(({ value }) => {
 					return () => CodeBlock(() => ({ ts: importExample, noShadow: true }))
 				})(),
 			]
+		})(),
+	]
+})
+
+const SubpackagesSection = maoka.html.section(({ value }) => {
+	value.id = "subpackages"
+
+	return () => [
+		maoka.html.h2(() => () => "Related subpackages"),
+		maoka.html.p(({ value }) => {
+			value.className = "section-intro"
+
+			return () =>
+				"`maoka/dom` and `maoka/test` are separate entrypoints built on top of the root API. They are documented here as companion packages rather than as part of the root module surface."
+		})(),
+		maoka.html.div(({ value }) => {
+			value.className = "api-grid"
+
+			return () => subpackages.map(pkg => SubpackageCard(() => pkg))
 		})(),
 	]
 })
@@ -822,6 +917,22 @@ const TypeGroup = maoka.html.section(({ props, value }) => {
 		})(),
 		maoka.html.h3(() => () => props().title),
 		...props().body.map(paragraph => maoka.html.p(() => () => paragraph)()),
+		CodeBlock(() => ({ ts: props().code, noShadow: true })),
+	]
+})
+
+const SubpackageCard = maoka.html.section(({ props, value }) => {
+	value.id = props().id
+	value.className = "api-card"
+
+	return () => [
+		maoka.html.h3(() => () => props().title),
+		SignatureBlock(() => ({ signature: props().importLine })),
+		...props().body.map(paragraph => maoka.html.p(() => () => paragraph)()),
+		maoka.html.p(() => () => maoka.html.strong(() => () => "Runtime exports")())(),
+		UsageList(() => ({ items: props().runtime })),
+		maoka.html.p(() => () => maoka.html.strong(() => () => "Type exports")())(),
+		UsageList(() => ({ items: props().types })),
 		CodeBlock(() => ({ ts: props().code, noShadow: true })),
 	]
 })
