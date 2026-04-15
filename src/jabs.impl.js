@@ -17,11 +17,11 @@ export const noRefresh = ({ lifecycle }) => {
  */
 export const shouldComponentRefresh =
 	compare =>
-	({ lifecycle, props$ }) => {
-		let prevProps = props$()
+	({ lifecycle, props }) => {
+		let prevProps = props()
 
 		lifecycle.beforeRefresh(() => {
-			const nextProps = props$()
+			const nextProps = props()
 			const shouldRefresh = compare(prevProps, nextProps)
 
 			prevProps = nextProps

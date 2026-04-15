@@ -3,8 +3,6 @@ import "./docs-nav.css"
 
 const pages = [
 	{ href: "/", label: "Home" },
-	{ href: "/getting-started", label: "Getting started" },
-	{ href: "/tutorial", label: "Tutorial" },
 	{ href: "/api", label: "API" },
 	{ href: "/rendering", label: "Rendering" },
 	{ href: "/component-lifecycle", label: "Component lifecycle" },
@@ -42,12 +40,12 @@ const Pages = maoka.html.nav(({ value }) => {
 	return () => pages.map(page => NavLink(() => page))
 })
 
-const SectionsNav = maoka.html.nav(({ value, props$ }) => {
+const SectionsNav = maoka.html.nav(({ value, props }) => {
 	value.setAttribute("aria-label", "Page sections")
 	value.className = "sections-nav"
 
 	return () =>
-		props$().sections.map(section =>
+		props().sections.map(section =>
 			NavLink(() => ({
 				className: `section-link section-link-depth-${section.depth}`,
 				href: `#${section.id}`,
@@ -56,11 +54,11 @@ const SectionsNav = maoka.html.nav(({ value, props$ }) => {
 		)
 })
 
-const NavLink = maoka.html.a(({ props$, value }) => {
-	value.href = props$().href
-	value.className = props$().className ?? ""
+const NavLink = maoka.html.a(({ props, value }) => {
+	value.href = props().href
+	value.className = props().className ?? ""
 
-	return () => props$().label
+	return () => props().label
 })
 
 const collectSections = value => {

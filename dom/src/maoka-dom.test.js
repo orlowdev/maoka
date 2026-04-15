@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test"
 
 import maoka from "../../index.js"
 import maokaDom, { render } from "../index.js"
+import { TodoApp } from "../../docs/src/examples/todo.js"
 
 const originalRequestAnimationFrame = globalThis.requestAnimationFrame
 const originalCancelAnimationFrame = globalThis.cancelAnimationFrame
@@ -171,8 +172,12 @@ describe("maokaDom.render", () => {
 		expect(container.children[0].namespaceURI).toBe("html")
 		expect(container.children[0].textContent).toBe("Testing")
 		expect(container.children[1].textContent).toBe("Count: 0")
-		expect(container.children[2].namespaceURI).toBe("http://www.w3.org/2000/svg")
-		expect(container.children[3].namespaceURI).toBe("http://www.w3.org/2000/svg")
+		expect(container.children[2].namespaceURI).toBe(
+			"http://www.w3.org/2000/svg",
+		)
+		expect(container.children[3].namespaceURI).toBe(
+			"http://www.w3.org/2000/svg",
+		)
 		expect(container.children[4].namespaceURI).toBe(
 			"http://www.w3.org/1998/Math/MathML",
 		)
@@ -187,12 +192,17 @@ describe("maokaDom.render", () => {
 
 			return scheduledFrames.length
 		}
-		globalThis.cancelAnimationFrame = frameId => void canceledFrames.push(frameId)
+		globalThis.cancelAnimationFrame = frameId =>
+			void canceledFrames.push(frameId)
 
 		const container = createContainer()
 		let count = 0
 		let inc
-		const Count = maoka.html.button(({ props$ }) => () => `Count: ${props$().count}`)
+		const Count = maoka.html.button(
+			({ props }) =>
+				() =>
+					`Count: ${props().count}`,
+		)
 		const Inc = maoka.html.button(({ value, lifecycle }) => {
 			value.onclick = () => inc()
 			lifecycle.beforeRefresh(() => {})
@@ -205,10 +215,7 @@ describe("maokaDom.render", () => {
 				refresh$()
 			}
 
-			return () => [
-				Count(() => ({ count })),
-				Inc(),
-			]
+			return () => [Count(() => ({ count })), Inc()]
 		})
 
 		render(container, Counter)
@@ -234,6 +241,119 @@ describe("maokaDom.render", () => {
 		expect(canceledFrames).toEqual([1])
 	})
 
+	test("keeps surrounding sibling order when an implicit child refreshes", () => {
+		const scheduledFrames = []
+
+		globalThis.requestAnimationFrame = flush => {
+			scheduledFrames.push(flush)
+
+			return scheduledFrames.length
+		}
+		globalThis.cancelAnimationFrame = () => {}
+
+		const container = createContainer()
+		const Title = maoka.html.h3(() => () => "Add Todo")
+		const Input = maoka.html.input(({ props, value }) => {
+			return () => {
+				value.value = props().value
+				value.oninput = event => props().onInput(event.currentTarget.value)
+
+				return null
+			}
+		})
+		const Form = maoka.html.div(
+			({ props }) =>
+				() =>
+					Input(() => ({
+						value: props().value,
+						onInput: props().onInput,
+					})),
+		)
+		const EditableForm = maoka.create(({ refresh$ }) => {
+			let draft = ""
+
+			return () =>
+				Form(() => ({
+					value: draft,
+					onInput: value => {
+						draft = value
+						refresh$()
+					},
+				}))
+		})
+		const Note = maoka.html.p(() => () => "Type to preview")
+		const Section = maoka.html.section(() => () => [
+			Title(),
+			EditableForm(),
+			Note(),
+		])
+		const App = maoka.create(() => () => Section())
+
+		render(container, App())
+
+		const section = container.children[0]
+		const title = section.children[0]
+		const form = section.children[1]
+		const note = section.children[2]
+		const input = form.children[0]
+		const originalInsertBefore = form.insertBefore.bind(form)
+		let reinserts = 0
+
+		form.insertBefore = (child, before) => {
+			reinserts++
+
+			return originalInsertBefore(child, before)
+		}
+
+		expect(section.children.map(child => child.tagName)).toEqual([
+			"h3",
+			"div",
+			"p",
+		])
+
+		input.oninput({ currentTarget: { value: "a" } })
+		scheduledFrames[0]()
+
+		expect(section.children).toEqual([title, form, note])
+		expect(section.children.map(child => child.tagName)).toEqual([
+			"h3",
+			"div",
+			"p",
+		])
+		expect(form.children[0]).toBe(input)
+		expect(form.children[0].value).toBe("a")
+		expect(reinserts).toBe(0)
+	})
+
+	test("updates the DOM when removing a todo from the docs example", () => {
+		const scheduledFrames = []
+
+		globalThis.requestAnimationFrame = flush => {
+			scheduledFrames.push(flush)
+
+			return scheduledFrames.length
+		}
+		globalThis.cancelAnimationFrame = () => {}
+
+		const container = createContainer()
+
+		render(container, TodoApp())
+
+		const preview = container.children[0]
+		const list = preview.children[3]
+		const getLabels = () =>
+			list.children.map(item => item.children[0].children[1].textContent)
+
+		expect(list.children).toHaveLength(2)
+		expect(getLabels()).toEqual(["Install maoka", "Build a todo app"])
+
+		list.children[0].children[1].onclick()
+		scheduledFrames[0]()
+
+		expect(list.children).toHaveLength(1)
+		expect(getLabels()).toEqual(["Build a todo app"])
+	})
+
 	test("diffs keyed children by moving, removing, and inserting DOM nodes", () => {
 		const scheduledFrames = []
 
@@ -252,8 +372,8 @@ describe("maokaDom.render", () => {
 			{ id: "c", label: "C" },
 		]
 		let refresh
-		const Row = maoka.html.div(({ props$ }) => () => {
-			const { id, label } = props$()
+		const Row = maoka.html.div(({ props }) => () => {
+			const { id, label } = props()
 
 			renderCounts.set(id, (renderCounts.get(id) ?? 0) + 1)
 
@@ -272,7 +392,11 @@ describe("maokaDom.render", () => {
 
 		const [a, b, c] = container.children
 
-		expect(container.children.map(child => child.textContent)).toEqual(["A", "B", "C"])
+		expect(container.children.map(child => child.textContent)).toEqual([
+			"A",
+			"B",
+			"C",
+		])
 		expect(renderCounts).toEqual(
 			new Map([
 				["a", 1],
@@ -353,7 +477,11 @@ describe("maokaDom.render", () => {
 		const container = createContainer()
 		let visible = false
 		let refresh
-		const Label = maoka.html.div(({ props$ }) => () => props$().label)
+		const Label = maoka.html.div(
+			({ props }) =>
+				() =>
+					props().label,
+		)
 		const Example = maoka.create(({ refresh$, lifecycle }) => {
 			refresh = refresh$
 			lifecycle.beforeRefresh(() => true)
@@ -370,7 +498,10 @@ describe("maokaDom.render", () => {
 		const [a, c] = container.children
 
 		expect(container.textContent).toBe("")
-		expect(container.children.map(child => child.textContent)).toEqual(["A", "C"])
+		expect(container.children.map(child => child.textContent)).toEqual([
+			"A",
+			"C",
+		])
 
 		visible = true
 		refresh()
@@ -408,10 +539,7 @@ describe("maokaDom.render", () => {
 		const Section = maoka.html.section(() => () => "Section")
 		const Page = maoka.create(() => () => [
 			maoka.html.main(() => () => [
-				maoka.create(() => () => [
-					Hero(),
-					Section(),
-				])(),
+				maoka.create(() => () => [Hero(), Section()])(),
 			])(),
 		])
 

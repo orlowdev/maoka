@@ -16,24 +16,24 @@ const noRefreshExampleTs = `const StableBadge = maoka.html.span(({ use }) => {
 	return (): string => "Ready"
 })`
 
-const shouldComponentRefreshExample = `const Price = maoka.html.span(({ props$, use }) => {
+const shouldComponentRefreshExample = `const Price = maoka.html.span(({ props, use }) => {
 	use(
 		maoka.jabs.shouldComponentRefresh(
 			(prevProps, nextProps) => prevProps.value !== nextProps.value,
 		),
 	)
 
-	return () => \`$\${props$().value}\`
+	return () => \`$\${props().value}\`
 })`
 
-const shouldComponentRefreshExampleTs = `const Price = maoka.html.span<{ value: number }>(({ props$, use }) => {
+const shouldComponentRefreshExampleTs = `const Price = maoka.html.span<{ value: number }>(({ props, use }) => {
 	use(
 		maoka.jabs.shouldComponentRefresh(
 			(prevProps, nextProps) => prevProps.value !== nextProps.value,
 		),
 	)
 
-	return (): string => \`$\${props$().value}\`
+	return (): string => \`$\${props().value}\`
 })`
 
 const errorBoundaryExample = `const ProfileBoundary = maoka.html.section(({ refresh$, use }) => {
@@ -117,7 +117,7 @@ const Page = maoka.create(() => () => [
 				Section(() => ({
 					id: "overview",
 					title: "Behavior beside components",
-					body: "Jabs are small functions that run through params.use(jab). They receive the same params as the component, so lifecycle hooks, props$(), refresh$(), and nested use() calls stay available without moving policy into the render function.",
+					body: "Jabs are small functions that run through params.use(jab). They receive the same params as the component, so lifecycle hooks, props(), refresh$(), and nested use() calls stay available without moving policy into the render function.",
 				})),
 				Section(() => ({
 					id: "no-refresh",
@@ -175,16 +175,16 @@ const Hero = maoka.html.header(() => () => [
 	})(),
 ])
 
-const Section = maoka.html.section(({ props$, value }) => {
-	value.id = props$().id
+const Section = maoka.html.section(({ props, value }) => {
+	value.id = props().id
 
 	return () => [
-		maoka.html.h2(() => () => props$().title),
-		maoka.html.p(() => () => props$().body),
-		props$().code
+		maoka.html.h2(() => () => props().title),
+		maoka.html.p(() => () => props().body),
+		props().code
 			? CodeBlock(() => ({
-					js: props$().code.js,
-					ts: props$().code.ts,
+					js: props().code.js,
+					ts: props().code.ts,
 				}))
 			: null,
 	]

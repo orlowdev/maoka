@@ -46,8 +46,8 @@ const PatchedComponent = Component().beforeCreate(params => {
 	// Do stuff here even before the component is created.
 })`
 
-const createExample = `const Counter = maoka.html.button(({ value, props$, refresh$ }) => {
-	let count = props$().initialCount
+const createExample = `const Counter = maoka.html.button(({ value, props, refresh$ }) => {
+	let count = props().initialCount
 
 	value.type = "button"
 	value.onclick = () => {
@@ -60,12 +60,12 @@ const createExample = `const Counter = maoka.html.button(({ value, props$, refre
 
 render(document.body, Counter(() => ({ initialCount: 0 })))`
 
-const renderExample = `const Count = maoka.html.span(({ props$ }) => {
+const renderExample = `const Count = maoka.html.span(({ props }) => {
 	// Create phase. Runs once.
 
 	return () => {
 		// Render phase. Runs after create and after accepted refreshes.
-		return \`Count: \${props$().count}\`
+		return \`Count: \${props().count}\`
 	}
 })
 
@@ -96,11 +96,11 @@ const mountExample = `const AutoFocusInput = maoka.html.input(({ lifecycle, valu
 	return () => ""
 })`
 
-const refreshExample = `const Digit = maoka.html.span(({ lifecycle, props$ }) => {
-	let previousDigit = props$().digit
+const refreshExample = `const Digit = maoka.html.span(({ lifecycle, props }) => {
+	let previousDigit = props().digit
 
 	lifecycle.beforeRefresh(() => {
-		const nextDigit = props$().digit
+		const nextDigit = props().digit
 		const shouldRender = nextDigit !== previousDigit
 
 		previousDigit = nextDigit
@@ -108,16 +108,16 @@ const refreshExample = `const Digit = maoka.html.span(({ lifecycle, props$ }) =>
 		return shouldRender
 	})
 
-	return () => props$().digit
+	return () => props().digit
 })`
 
-const asyncRefreshExample = `const Profile = maoka.html.article(({ lifecycle, props$, refresh$ }) => {
+const asyncRefreshExample = `const Profile = maoka.html.article(({ lifecycle, props, refresh$ }) => {
 	let isLoading = false
 	let loadedId = null
 	let profile = null
 
 	lifecycle.beforeRefresh(() => {
-		const { id } = props$()
+		const { id } = props()
 
 		if (loadedId === id) return true
 
@@ -184,7 +184,7 @@ const unmountExample = `const WindowSize = maoka.html.output(({ lifecycle, refre
 	return () => label
 })`
 
-const errorExample = `const UserCard = maoka.html.article(({ lifecycle, props$, refresh$ }) => {
+const errorExample = `const UserCard = maoka.html.article(({ lifecycle, props, refresh$ }) => {
 	let errorMessage = ""
 
 	lifecycle.onError((error, descendantError) => {
@@ -196,7 +196,7 @@ const errorExample = `const UserCard = maoka.html.article(({ lifecycle, props$, 
 	return () => {
 		if (errorMessage) return \`Could not render user: \${errorMessage}\`
 
-		const user = props$().user
+		const user = props().user
 
 		if (!user.name) throw new Error("Missing user name")
 
@@ -212,8 +212,8 @@ const errorBoundaryExample = `const UserBoundary = maoka.html.section(({ use }) 
 	return () => UserCard()
 })`
 
-const beforeCreateExample = `const TraceablePanel = maoka.html.section(({ props$ }) => {
-	return () => props$().title
+const beforeCreateExample = `const TraceablePanel = maoka.html.section(({ props }) => {
+	return () => props().title
 })
 
 const Panel = TraceablePanel(() => ({ key: "settings", title: "Settings" }))
@@ -352,13 +352,13 @@ const Hero = maoka.html.header(() => () => [
 	})(),
 ])
 
-const Section = maoka.html.section(({ props$, value }) => {
-	value.id = props$().id
+const Section = maoka.html.section(({ props, value }) => {
+	value.id = props().id
 
 	return () => [
-		maoka.html.h2(() => () => props$().title),
-		...props$().body.map(body => maoka.html.p(() => () => body)()),
-		props$().code ? CodeBlock(() => ({ js: props$().code })) : null,
+		maoka.html.h2(() => () => props().title),
+		...props().body.map(body => maoka.html.p(() => () => body)()),
+		props().code ? CodeBlock(() => ({ js: props().code })) : null,
 	]
 })
 

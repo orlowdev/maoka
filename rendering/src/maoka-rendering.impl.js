@@ -10,7 +10,12 @@ import {
 	updateNodeComponent,
 } from "../../src/maoka.impl.js"
 
-const Text = pure("#text", ({ props$ }) => () => props$().value)
+const Text = pure(
+	"#text",
+	({ props }) =>
+		() =>
+			props().value,
+)
 const refreshVersions = new WeakMap()
 
 /**
@@ -67,9 +72,7 @@ export const createRoot = options => {
 
 						if (refreshNode(node, renderer, force)) {
 							refreshedNodes.add(node)
-							node.children.forEach(child =>
-								queueCurrentRefresh(child, false),
-							)
+							node.children.forEach(child => queueCurrentRefresh(child, false))
 						}
 					}
 				}
@@ -375,11 +378,9 @@ const toComponent = template => {
 }
 
 const refreshProps = node => {
-	const previousProps = node.props
+	node.syncProps()
 
-	node.props$()
-
-	return previousProps !== node.props
+	return node.propsChanged
 }
 
 const isImplicitNode = node => node.value === node.parent?.value

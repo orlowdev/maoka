@@ -44,12 +44,12 @@ export namespace Maoka {
 
 	type Refresh$ = () => void
 
-	type BeforeRefreshContinuation = () => boolean | void | Promise<boolean | void>
-
-	type BeforeRefreshHandler = () =>
+	type BeforeRefreshContinuation = () =>
 		| boolean
 		| void
-		| BeforeRefreshContinuation
+		| Promise<boolean | void>
+
+	type BeforeRefreshHandler = () => boolean | void | BeforeRefreshContinuation
 
 	type DescendantError = {
 		error: Error
@@ -80,7 +80,7 @@ export namespace Maoka {
 		use: Use<$Type, $Props>
 		value: $Type
 		refresh$: Refresh$
-		props$: DefinitionProps<$Props>
+		props: DefinitionProps<$Props>
 		lifecycle: Lifecycle
 	}
 
@@ -129,13 +129,13 @@ export namespace Maoka {
 
 	type Blueprint<$Props extends BaseProps = NoProps> = $Props extends NoProps
 		? (props?: Props<$Props>) => Maoka.Component<any, $Props>
-		: (props: Props<$Props>) => Maoka.Component<any, $Props>
+		: (props<$Props>) => Maoka.Component<any, $Props>
 
 	type Node<$Type = any, $Props extends BaseProps = NoProps> = {
 		key: Key
 		value: $Type
 		props: $Props
-		props$: DefinitionProps<$Props>
+		props: DefinitionProps<$Props>
 		root: Root<$Type>
 		render: Render
 		lastRenderResult: Template

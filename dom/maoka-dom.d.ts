@@ -16,6 +16,6 @@ export type MaokaDomRenderOptions = {
 
 export const render: (
 	container: Element,
-	component: Maoka.Blueprint | Maoka.Component<Element>,
+	component: Maoka.Component<Element>,
 	options?: MaokaDomRenderOptions,
 ) => Maoka.Root<Element>

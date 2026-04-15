@@ -49,6 +49,7 @@
 
 .code-panel {
 	position: relative;
+	min-width: 0;
 }
 
 .code-panel::after {
@@ -71,7 +72,8 @@ pre {
 	position: relative;
 	margin: 0;
 	padding: 24px;
-	overflow: auto;
+	overflow-x: auto;
+	overflow-y: hidden;
 	background:
 		linear-gradient(120deg, rgba(255, 61, 139, 0.16), transparent 36%),
 		linear-gradient(300deg, rgba(0, 194, 255, 0.16), transparent 32%),
@@ -113,15 +115,51 @@ pre::before {
 }
 
 code {
+	display: block;
 	font-family: var(--font-mono);
 	font-feature-settings: "calt" 1;
 	font-size: 0.86rem;
 	font-variant-ligatures: contextual;
 	line-height: 1.65;
+	min-width: max-content;
 	white-space: pre;
 }
 
-code span {
+.code-line {
+	display: block;
+	margin: 0;
+	min-height: 1.65em;
+	padding-left: 1.5em;
+	position: relative;
+}
+
+.code-line::before {
+	left: 0;
+	position: absolute;
+	top: 0;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.code-line.is-added {
+	background: rgba(112, 255, 163, 0.08);
+}
+
+.code-line.is-added::before {
+	color: #70ffa3;
+	content: "+";
+}
+
+.code-line.is-removed {
+	background: rgba(255, 122, 191, 0.08);
+}
+
+.code-line.is-removed::before {
+	color: #ff7abf;
+	content: "-";
+}
+
+.code-line > span {
 	display: inline;
 	margin: 0;
 }

@@ -8,19 +8,14 @@ export const Discounter = maoka.create(({ refresh$ }) => {
 		refresh$()
 	}
 
-	return () => [
-		Discount(() => ({ onClick })),
-		...createCounters(count, 1),
-	]
+	return () => [Discount(() => ({ onClick })), ...createCounters(count, 1)]
 })
 
 const createCounters = (count, place) => {
 	const nextPlace = place * 10
 
 	return [
-		...(Math.abs(count) >= nextPlace
-			? createCounters(count, nextPlace)
-			: []),
+		...(Math.abs(count) >= nextPlace ? createCounters(count, nextPlace) : []),
 		Count(() => ({
 			key: place,
 			digit: Math.floor(Math.abs(count) / place) % 10,
@@ -28,15 +23,15 @@ const createCounters = (count, place) => {
 	]
 }
 
-const Count = maoka.html.div(({ props$, value }) => {
+const Count = maoka.html.div(({ props, value }) => {
 	value.className = "demo-tile"
 
-	return () => props$().digit
+	return () => props().digit
 })
 
-const Discount = maoka.html.button(({ props$, value }) => {
+const Discount = maoka.html.button(({ props, value }) => {
 	value.className = "demo-tile demo-action"
-	value.onclick = () => props$().onClick()
+	value.onclick = () => props().onClick()
 
 	return () => "-"
 })

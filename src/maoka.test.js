@@ -10,7 +10,8 @@ const createRoot = () => {
 		key: "root",
 		value: { tag: "root" },
 		children: [],
-		createKey: () => `key-${refreshedNodes.length + createdValueTags.length + 1}`,
+		createKey: () =>
+			`key-${refreshedNodes.length + createdValueTags.length + 1}`,
 		createValue: tag => {
 			createdValueTags.push(tag)
 
@@ -22,8 +23,8 @@ const createRoot = () => {
 	const parent = {
 		key: "parent",
 		value: { tag: "parent" },
-		props: {},
-		props$: () => ({ key: "parent" }),
+		propsData: {},
+		props: () => ({ key: "parent" }),
 		root,
 		parent: null,
 		lastRenderResult: null,
@@ -83,10 +84,10 @@ describe("maoka components", () => {
 		params.refresh$()
 		expect(refreshedNodes).toEqual([node])
 
-		expect(node.props$()).toEqual({ id: "box", key: "key-1" })
+		expect(node.props()).toEqual({ id: "box", key: "key-1" })
 		expect(refreshedNodes).toEqual([node])
 
-		expect(node.props$()).toEqual({ id: "box", key: "key-1" })
+		expect(node.props()).toEqual({ id: "box", key: "key-1" })
 		expect(refreshedNodes).toEqual([node])
 	})
 
@@ -264,15 +265,15 @@ describe("maoka components", () => {
 		).toThrow(error)
 	})
 
-	test("props update the node key and refresh only when values change", () => {
+	test("props update the node key without self-scheduling refresh from props reads", () => {
 		const { parent, refreshedNodes, root } = createRoot()
 		let count = 1
 		let key = 0
 
-		const node = maoka.create(({ props$ }) => () => {
-			const props = props$()
+		const node = maoka.create(({ props }) => () => {
+			const currentProps = props()
 
-			return `Count: ${props.count}`
+			return `Count: ${currentProps.count}`
 		})(() => ({ count, key }))(root, parent)
 
 		expect(node.key).toBe(0)
@@ -285,13 +286,39 @@ describe("maoka components", () => {
 		count = 2
 
 		expect(node.render()).toBe("Count: 2")
-		expect(refreshedNodes).toEqual([node])
+		expect(refreshedNodes).toEqual([])
 
 		key = ""
 
 		expect(node.render()).toBe("Count: 2")
 		expect(node.key).toBe("")
-		expect(refreshedNodes).toEqual([node, node])
+		expect(refreshedNodes).toEqual([])
+	})
+
+	test("fresh props objects do not queue refresh while being read", () => {
+		const { parent, refreshedNodes, root } = createRoot()
+		let propsCalls = 0
+
+		const node = maoka.create(
+			({ props }) =>
+				() =>
+					props().label,
+		)(() => {
+			propsCalls++
+
+			return {
+				label: "Stable label",
+				options: {},
+			}
+		})(root, parent)
+
+		expect(node.lastRenderResult).toBe("Stable label")
+		expect(propsCalls).toBe(2)
+		expect(refreshedNodes).toEqual([])
+
+		expect(node.render()).toBe("Stable label")
+		expect(propsCalls).toBe(3)
+		expect(refreshedNodes).toEqual([])
 	})
 
 	test("pure builds a node from a new root value for the tag", () => {

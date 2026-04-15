@@ -39,7 +39,7 @@ describe("maoka jabs", () => {
 		let props = { important: 0, ignored: 0 }
 		let refresh
 		let renders = 0
-		const Counter = maoka.html.div(({ props$, use }) => {
+		const Counter = maoka.html.div(({ props, use }) => {
 			use(
 				maoka.jabs.shouldComponentRefresh(
 					(prevProps, nextProps) => prevProps.important !== nextProps.important,
@@ -47,7 +47,7 @@ describe("maoka jabs", () => {
 			)
 
 			return () => {
-				const { important, ignored } = props$()
+				const { important, ignored } = props()
 
 				renders++
 

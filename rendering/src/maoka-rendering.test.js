@@ -6,8 +6,10 @@ import { pure } from "../../src/maoka.impl.js"
 const createNode = key => ({
 	key,
 	value: { tag: key },
-	props: {},
-	props$: () => ({ key }),
+	propsData: {},
+	propsChanged: false,
+	syncProps: () => ({ key }),
+	props: () => ({ key }),
 	root: null,
 	render: () => key,
 	lastRenderResult: key,
@@ -28,17 +30,21 @@ const createNode = key => ({
 const createPropsNode = (key, getProps) => {
 	const node = createNode(key)
 
-	node.props = getProps()
-	node.props$ = () => {
+	node.propsData = getProps()
+	node.syncProps = () => {
 		const props = getProps()
 		const hasChanged =
-			Object.keys(props).some(propKey => props[propKey] !== node.props[propKey]) ||
-			Object.keys(node.props).some(propKey => !(propKey in props))
+			Object.keys(props).some(
+				propKey => props[propKey] !== node.propsData[propKey],
+			) || Object.keys(node.propsData).some(propKey => !(propKey in props))
 
-		if (hasChanged) node.props = props
+		node.propsChanged = hasChanged
 
-		return { ...props, key }
+		if (hasChanged) node.propsData = props
+
+		return props
 	}
+	node.props = () => ({ ...node.syncProps(), key })
 
 	return node
 }
@@ -109,7 +115,8 @@ describe("createRoot", () => {
 
 				return scheduledRefresh
 			},
-			cancelRefresh: scheduledRefresh => void canceledFlushes.push(scheduledRefresh),
+			cancelRefresh: scheduledRefresh =>
+				void canceledFlushes.push(scheduledRefresh),
 		})
 		const first = createNode("first")
 		const second = createNode("second")
@@ -137,7 +144,9 @@ describe("createRoot", () => {
 		})
 		const parent = createNode("parent")
 		const child = createPropsNode("child", () => ({ childCount }))
-		const grandchild = createPropsNode("grandchild", () => ({ grandchildCount }))
+		const grandchild = createPropsNode("grandchild", () => ({
+			grandchildCount,
+		}))
 
 		parent.children.push(child)
 		parent.lifecycleHandlers.beforeRefresh.push(() => {})
@@ -382,8 +391,8 @@ describe("createRoot", () => {
 			createValue: tag => ({ tag }),
 			refreshNode: node => void refreshedValues.push(node.lastRenderResult),
 		})
-		const Child = pure("child", ({ props$ }) => () => {
-			return `Child: ${props$().count}`
+		const Child = pure("child", ({ props }) => () => {
+			return `Child: ${props().count}`
 		})
 		const parent = createNode("parent")
 		let childCount = 0

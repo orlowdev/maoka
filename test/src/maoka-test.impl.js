@@ -96,7 +96,8 @@ export const renderJab = (jab, options = {}) => {
 export const setup = renderJab
 
 const refreshNode = node => {
-	node.value.text = node.lastRenderResult == null ? "" : String(node.lastRenderResult)
+	node.value.text =
+		node.lastRenderResult == null ? "" : String(node.lastRenderResult)
 }
 
 const insertNode = (parent, node, index) => {
@@ -126,7 +127,7 @@ const createRootNode = (root, value) => ({
 	key: root.key,
 	value,
 	props: {},
-	props$: () => ({ key: root.key }),
+	props: () => ({ key: root.key }),
 	root,
 	render: () => root.children,
 	lastRenderResult: root.children,
@@ -157,10 +158,7 @@ const removeValue = value => {
 	value.parent = null
 }
 
-const walk = value => [
-	value,
-	...value.children.flatMap(child => walk(child)),
-]
+const walk = value => [value, ...value.children.flatMap(child => walk(child))]
 
 const collectText = value =>
 	value.text + value.children.map(collectText).join("")

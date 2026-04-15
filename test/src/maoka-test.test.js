@@ -6,10 +6,16 @@ import { render, renderJab } from "../index.js"
 describe("maoka test renderer", () => {
 	test("renders and refreshes components in an in-memory tree", () => {
 		let count = 0
-		const Count = maoka.html.div(({ props$ }) => () => `Count: ${props$().count}`)
+		const Count = maoka.html.div(
+			({ props }) =>
+				() =>
+					`Count: ${props().count}`,
+		)
 		const Counter = maoka.create(() => () => [
 			Count(() => ({ key: "count", count })),
-			count > 0 ? maoka.html.button(() => () => "+")(() => ({ key: "inc" })) : null,
+			count > 0
+				? maoka.html.button(() => () => "+")(() => ({ key: "inc" }))
+				: null,
 		])
 		const renderer = render(Counter)
 
@@ -74,9 +80,7 @@ describe("maoka test renderer", () => {
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
-			return () => [
-				asButton ? Button() : Div(),
-			]
+			return () => [asButton ? Button() : Div()]
 		})
 		const renderer = render(App)
 
@@ -117,7 +121,7 @@ describe("maoka test renderer", () => {
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
-			return () => visible ? Child() : null
+			return () => (visible ? Child() : null)
 		})
 		const renderer = render(App)
 
@@ -135,7 +139,11 @@ describe("maoka test renderer", () => {
 		const calls = []
 		let count = 0
 		let refresh
-		const Count = maoka.html.div(({ props$ }) => () => `Count: ${props$().count}`)
+		const Count = maoka.html.div(
+			({ props }) =>
+				() =>
+					`Count: ${props().count}`,
+		)
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
@@ -161,20 +169,17 @@ describe("maoka test renderer", () => {
 		const calls = []
 		let items = ["a", "b"]
 		let refresh
-		const Row = maoka.html.div(({ lifecycle, props$ }) => {
+		const Row = maoka.html.div(({ lifecycle, props }) => {
 			lifecycle.afterMount(() => {
-				calls.push(`afterMount:${props$().id}`)
+				calls.push(`afterMount:${props().id}`)
 			})
 
-			return () => props$().id
+			return () => props().id
 		})
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
-			return () =>
-				items.map(id =>
-					Row(() => ({ key: id, id })),
-				)
+			return () => items.map(id => Row(() => ({ key: id, id })))
 		})
 		const renderer = render(App)
 
@@ -206,11 +211,11 @@ describe("maoka test renderer", () => {
 
 	test("runs jabs with real params, props, lifecycle, and refresh", () => {
 		let count = 1
-		const useCounter = ({ lifecycle, props$, refresh$ }) => {
+		const useCounter = ({ lifecycle, props, refresh$ }) => {
 			const state = {
 				refreshes: 0,
 				get label() {
-					return props$().label
+					return props().label
 				},
 			}
 
@@ -242,6 +247,6 @@ describe("maoka test renderer", () => {
 		expect(renderer.result().state.refreshes).toBe(1)
 		expect(renderer.result().state.label).toBe("Count: 2")
 		expect(renderer.text()).toBe("Count: 2")
-		expect(renderer.params().props$().label).toBe("Count: 2")
+		expect(renderer.params().props().label).toBe("Count: 2")
 	})
 })

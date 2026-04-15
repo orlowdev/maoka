@@ -1,6 +1,9 @@
 import maoka from "../../../index.js"
 import "./code-block.css"
 
+let selectedLanguage = "js"
+const refreshSubscribers = new Set()
+
 const keywords = new Set([
 	"as",
 	"const",
@@ -22,97 +25,146 @@ const bracketPairs = {
 }
 const closingBrackets = new Set(Object.values(bracketPairs))
 
-export const CodeBlock = maoka.html.section(({ props$, refresh$, value }) => {
-	let language = props$().js ? "js" : "ts"
+export const CodeBlock = maoka.html.section(
+	({ lifecycle, props, refresh$, value }) => {
+		value.className = "code-block"
 
-	value.className = "code-block"
+		lifecycle.afterMount(() => {
+			refreshSubscribers.add(refresh$)
 
-	const select = nextLanguage => {
-		language = nextLanguage
-		refresh$()
-	}
+			return () => {
+				refreshSubscribers.delete(refresh$)
+			}
+		})
+
+		const select = nextLanguage => {
+			selectedLanguage = nextLanguage
+
+			for (const refresh of refreshSubscribers) refresh()
+		}
+
+		return () => {
+			const p = props()
+			const language = resolveLanguage(p)
+			const code = normalizeCode(language === "js" ? p.js : p.ts)
+
+			return [
+				LanguageTabs(() => ({ language, props: p, select })),
+				CodePanel(() => ({ code, language })),
+			]
+		}
+	},
+)
+
+const LanguageTabs = maoka.html.div(({ props, value }) => {
+	value.className = "code-tabs"
 
 	return () => {
-		const props = props$()
-		const code = normalizeCode(language === "js" ? props.js : props.ts)
+		const p = props()
 
 		return [
-			LanguageTabs(() => ({ language, props, select })),
-			CodePanel(() => ({ code, language })),
+			p.props.js
+				? LanguageTab(() => ({
+						active: p.language === "js",
+						language: "js",
+						label: "JS",
+						select: p.select,
+					}))
+				: null,
+			p.props.ts
+				? LanguageTab(() => ({
+						active: p.language === "ts",
+						language: "ts",
+						label: "TS",
+						select: p.select,
+					}))
+				: null,
 		]
 	}
 })
 
-const LanguageTabs = maoka.html.div(({ props$, value }) => {
-	value.className = "code-tabs"
-
-	return () => [
-		props$().props.js
-			? LanguageTab(() => ({
-					active: props$().language === "js",
-					language: "js",
-					label: "JS",
-					select: props$().select,
-				}))
-			: null,
-		props$().props.ts
-			? LanguageTab(() => ({
-					active: props$().language === "ts",
-					language: "ts",
-					label: "TS",
-					select: props$().select,
-				}))
-			: null,
-	]
-})
-
-const LanguageTab = maoka.html.button(({ props$, value }) => {
+const LanguageTab = maoka.html.button(({ props, value }) => {
 	value.type = "button"
-	value.onclick = () => props$().select(props$().language)
+	value.onclick = () => props().select(props().language)
 
 	return () => {
 		value.className = [
 			"code-tab",
-			`is-${props$().language}`,
-			props$().active ? "is-active" : "",
+			`is-${props().language}`,
+			props().active ? "is-active" : "",
 		]
 			.filter(Boolean)
 			.join(" ")
 
-		return props$().label
+		return props().label
 	}
 })
 
-const CodePanel = maoka.html.div(({ props$, value }) => {
+const CodePanel = maoka.html.div(({ props, value }) => {
 	return () => {
-		value.className = `code-panel is-${props$().language}`
+		const p = props()
 
-		return [
-			Pre(() => ({ code: props$().code })),
-		]
+		value.className = `code-panel is-${p.language}`
+
+		return [Pre(() => ({ code: p.code }))]
 	}
 })
 
-const Pre = maoka.html.pre(({ props$ }) => {
-	return () => Code(() => ({ code: props$().code }))
+const Pre = maoka.html.pre(({ props }) => {
+	return () => Code(() => ({ code: props().code }))
 })
 
-const Code = maoka.html.code(({ props$ }) => {
+const Code = maoka.html.code(({ props }) => {
 	return () =>
-		tokenize(props$().code).map((token, index) =>
-			Token(() => ({ key: index, token })),
+		splitLines(props().code).map((line, index) =>
+			CodeLine(() => ({ key: index, line })),
 		)
 })
 
-const Token = maoka.html.span(({ props$, value }) => {
+const CodeLine = maoka.html.span(({ props, value }) => {
 	return () => {
-		const { token } = props$()
+		const line = props().line
+
+		value.className = getLineClassName(line)
+
+		return tokenize(line.code).map((token, index) =>
+			Token(() => ({ key: index, token })),
+		)
+	}
+})
+
+const Token = maoka.html.span(({ props, value }) => {
+	return () => {
+		const { token } = props()
 
 		value.className = token.className
 
 		return token.value
 	}
 })
+
+const resolveLanguage = props => {
+	if (selectedLanguage === "ts" && props.ts) return "ts"
+	if (selectedLanguage === "js" && props.js) return "js"
+
+	return props.js ? "js" : "ts"
+}
+
+const splitLines = code =>
+	code.split("\n").map(rawLine => {
+		const match = rawLine.match(/^(\s*)([+-])(.*)$/)
+
+		if (!match) return { marker: "", code: rawLine }
+
+		const [, indentation, marker, rest] = match
+
+		return { marker, code: indentation + rest }
+	})
+
+const getLineClassName = line =>
+	["code-line", line.marker === "+" ? "is-added" : "", line.marker === "-" ? "is-removed" : ""]
+		.filter(Boolean)
+		.join(" ")
 
 const tokenize = code => {
 	const tokens = []

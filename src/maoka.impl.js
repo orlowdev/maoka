@@ -137,7 +137,7 @@ const COMPONENT_META = Symbol("maoka.component")
  */
 const createBase = (
 	root,
-	props,
+	initialProps,
 	parent,
 	definition,
 	value,
@@ -146,37 +146,31 @@ const createBase = (
 ) => {
 	let key = root.createKey()
 	let initialized = false
-	let propsSource = props
+	let propsSource = initialProps
 
-	// TODO: implement props change detection logic
-	const props$ = () => {
+	const syncProps = () => {
 		if (!propsSource) return { key }
 
 		const extractedProps = propsSource() ?? {}
+		const previousProps = node.propsData
 
 		if ("key" in extractedProps) {
 			key = extractedProps.key
 			node.key = key
 		}
 
-		if (initialized) {
-			const hasChanged =
-				Object.keys(extractedProps).some(
-					propKey => extractedProps[propKey] !== node.props?.[propKey],
-				) ||
-				Object.keys(node.props ?? {}).some(
-					propKey => !(propKey in extractedProps),
-				)
-
-			if (hasChanged) {
-				node.props = extractedProps
-				node.refresh$()
-			}
-		} else {
-			node.props = extractedProps
-		}
+		node.propsChanged = initialized
+			? havePropsChanged(previousProps, extractedProps)
+			: false
+		node.propsData = extractedProps
 
 		initialized = true
+
+		return extractedProps
+	}
+
+	const props = () => {
+		const extractedProps = syncProps()
 
 		return { ...extractedProps, key }
 	}
@@ -190,7 +184,10 @@ const createBase = (
 		root,
 		parent,
 		children: [],
-		props$,
+		propsData: {},
+		syncProps,
+		props,
+		propsChanged: false,
 		refresh$: () => root.refreshNode(node),
 		lifecycleHandlers: {
 			afterMount: [],
@@ -208,7 +205,7 @@ const createBase = (
 
 	const params = {
 		use: jab => jab(params),
-		props$,
+		props,
 		value,
 		refresh$: () => root.refreshNode(node),
 		get key() {
@@ -230,7 +227,7 @@ const createBase = (
 	}
 
 	try {
-		props$()
+		props()
 		beforeCreateHandlers.forEach(handler => handler(params))
 		node.render = definition(params)
 		node.lastRenderResult = node.render()
@@ -260,3 +257,8 @@ const createComponent = (props, type, instantiate) => {
 }
 
 const createTag = (namespace, tag) => ({ namespace, tag })
+
+const havePropsChanged = (previousProps = {}, nextProps = {}) =>
+	Object.keys(nextProps).some(
+		propKey => nextProps[propKey] !== previousProps?.[propKey],
+	) || Object.keys(previousProps ?? {}).some(propKey => !(propKey in nextProps))

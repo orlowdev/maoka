@@ -61,9 +61,10 @@ const insertNode = (parent, node, index) => {
 		parent.value.textContent = ""
 	}
 
-	const beforeValue = childNodes[index] ?? null
+	const beforeValue = getBeforeValue(parent, index)
 
 	if (beforeValue === node.value) return
+	if (isNodeInCorrectPosition(parent.value, node.value, beforeValue)) return
 
 	parent.value.insertBefore(node.value, beforeValue)
 }
@@ -95,13 +96,59 @@ const createElement = (document, tag) => {
 	return document.createElement(tag)
 }
 
-const getChildNodes = value => value.childNodes ?? value.children
+const getChildNodes = value => Array.from(value.childNodes ?? value.children ?? [])
+
+const isNodeInCorrectPosition = (parentValue, nodeValue, beforeValue) => {
+	if (nodeValue.parentNode !== parentValue) return false
+
+	const childNodes = getChildNodes(parentValue)
+	const currentIndex = childNodes.indexOf(nodeValue)
+	const beforeIndex =
+		beforeValue == null ? childNodes.length : childNodes.indexOf(beforeValue)
+
+	if (currentIndex === -1 || beforeIndex === -1) return false
+
+	const targetIndex =
+		beforeValue == null ? childNodes.length - 1 : beforeIndex - 1
+
+	return currentIndex === targetIndex
+}
+
+const getBeforeValue = (parent, index) => {
+	for (const sibling of parent.children.slice(index + 1)) {
+		const value = getFirstConcreteValue(sibling)
+
+		if (value?.parentNode === parent.value) return value
+	}
+
+	if (isImplicitNode(parent) && parent.parent) {
+		const parentIndex = parent.parent.children.indexOf(parent)
+
+		if (parentIndex !== -1) {
+			return getBeforeValue(parent.parent, parentIndex)
+		}
+	}
+
+	return null
+}
+
+const getFirstConcreteValue = node => {
+	if (!isImplicitNode(node)) return node.value
+
+	for (const child of node.children) {
+		const value = getFirstConcreteValue(child)
+
+		if (value) return value
+	}
+
+	return null
+}
 
 const createRootNode = (root, container) => ({
 	key: root.key,
 	value: container,
 	props: {},
-	props$: () => ({ key: root.key }),
+	props: () => ({ key: root.key }),
 	root,
 	render: () => root.children,
 	lastRenderResult: root.children,
@@ -124,3 +171,5 @@ const instantiateComponent = (component, root, parent) => {
 
 	return initializedComponent(root, parent)
 }
+
+const isImplicitNode = node => node.value === node.parent?.value
