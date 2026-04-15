@@ -1,8 +1,9 @@
-import maoka from "../index.js"
-import { render } from "../dom/index.js"
-import { CodeDemo } from "./src/components/code-demo.js"
-import { DocsNav } from "./src/components/docs-nav.js"
-import { Discounter } from "./src/examples/discounter.js"
+import "./style.css"
+import maoka from "../../../index.js"
+import { render } from "../../../dom/index.js"
+import { CodeDemo } from "../../src/components/code-demo.js"
+import { DocsNav } from "../../src/components/docs-nav.js"
+import { Discounter } from "../../src/examples/discounter.js"
 
 const discounterExample = `import maoka from "maoka"
 
@@ -92,12 +93,7 @@ const Page = maoka.create(() => () => [
 		value.className = "docs-layout"
 
 		return () => [
-			DocsNav(() => ({
-				sections: [
-					{ id: "first-component", label: "First component" },
-					{ id: "keyed-refresh", label: "Keyed refresh" },
-				],
-			})),
+			DocsNav(),
 			maoka.html.article(() => () => [
 				Hero(),
 				Section(() => ({

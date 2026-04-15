@@ -1,7 +1,8 @@
-import maoka from "../index.js"
-import { render } from "../dom/index.js"
-import { CodeBlock } from "./src/components/code-block.js"
-import { DocsNav } from "./src/components/docs-nav.js"
+import "./style.css"
+import maoka from "../../../index.js"
+import { render } from "../../../dom/index.js"
+import { CodeBlock } from "../../src/components/code-block.js"
+import { DocsNav } from "../../src/components/docs-nav.js"
 
 const lifecycleExample = `const Component = maoka.create(({ lifecycle }) => {
 	// Create phase. Runs only once.
@@ -110,6 +111,41 @@ const refreshExample = `const Digit = maoka.html.span(({ lifecycle, props$ }) =>
 	return () => props$().digit
 })`
 
+const asyncRefreshExample = `const Profile = maoka.html.article(({ lifecycle, props$, refresh$ }) => {
+	let isLoading = false
+	let loadedId = null
+	let profile = null
+
+	lifecycle.beforeRefresh(() => {
+		const { id } = props$()
+
+		if (loadedId === id) return true
+
+		if (!isLoading) {
+			isLoading = true
+			refresh$()
+
+			return false
+		}
+
+		return async () => {
+			profile = await fetch(\`/api/profiles/\${id}\`).then(response =>
+				response.json(),
+			)
+			loadedId = id
+			isLoading = false
+
+			return true
+		}
+	})
+
+	return () => {
+		if (isLoading) return "Loading..."
+
+		return profile?.name ?? "No profile"
+	}
+})`
+
 const destroyExample = `const SocketStatus = maoka.html.output(({ lifecycle, refresh$ }) => {
 	let status = "connecting"
 	const socket = new WebSocket("wss://example.test")
@@ -193,20 +229,7 @@ const Page = maoka.create(() => () => [
 		value.className = "docs-layout"
 
 		return () => [
-			DocsNav(() => ({
-				sections: [
-					{ id: "tldr", label: "TL;DR" },
-					{ id: "create", label: "Create" },
-					{ id: "render", label: "Render" },
-					{ id: "hooks", label: "Lifecycle hooks" },
-					{ id: "after-mount", label: "afterMount" },
-					{ id: "before-refresh", label: "beforeRefresh" },
-					{ id: "before-unmount", label: "beforeUnmount" },
-					{ id: "after-unmount", label: "afterUnmount" },
-					{ id: "error", label: "onError" },
-					{ id: "before-create", label: "Before create" },
-				],
-			})),
+			DocsNav(),
 			maoka.html.article(() => () => [
 				Hero(),
 				Section(() => ({
@@ -261,6 +284,16 @@ const Page = maoka.create(() => () => [
 						"Use this hook when a component can cheaply decide whether its own output changed. Keyed children still get their own refresh checks, so a parent can stay quiet while a smaller piece updates.",
 					],
 					code: refreshExample,
+				})),
+				Section(() => ({
+					id: "patterns",
+					title: "Patterns",
+					body: [
+						"For async work tied to props, keep the work in beforeRefresh. Set local loading state, request another refresh, and return false from the first pass. The next pass can return an async continuation.",
+						"When beforeRefresh returns an async continuation, Maoka renders the current state first, waits for the continuation, routes rejected errors through onError, and renders again only when the continuation returns true.",
+						"This keeps async state inside the component lifecycle instead of moving errors and refresh policy into detached promise chains.",
+					],
+					code: asyncRefreshExample,
 				})),
 				Section(() => ({
 					id: "before-unmount",

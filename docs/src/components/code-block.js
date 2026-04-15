@@ -1,4 +1,5 @@
 import maoka from "../../../index.js"
+import "./code-block.css"
 
 const keywords = new Set([
 	"as",

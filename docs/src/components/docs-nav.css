@@ -1,0 +1,79 @@
+aside {
+	position: sticky;
+	top: 24px;
+	padding: 16px 0 0 16px;
+	border-left: 3px solid var(--hot);
+}
+
+.brand-link {
+	display: inline-grid;
+	margin-bottom: 28px;
+	color: var(--ink);
+	font-size: 1.4rem;
+	font-weight: 1000;
+	letter-spacing: 0.16em;
+	text-decoration: none;
+	text-transform: uppercase;
+}
+
+.brand-link::after {
+	width: 42px;
+	height: 5px;
+	margin-top: 8px;
+	background: linear-gradient(90deg, var(--hot), var(--aqua));
+	content: "";
+}
+
+nav {
+	display: grid;
+	gap: 8px;
+}
+
+.sections-nav {
+	margin-top: 26px;
+	padding-top: 18px;
+	border-top: 1px solid var(--line);
+}
+
+.sections-nav::before {
+	margin-bottom: 8px;
+	color: var(--hot);
+	content: "On this page";
+	font-size: 0.72rem;
+	font-weight: 1000;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+}
+
+nav a {
+	color: var(--muted);
+	font-size: 0.94rem;
+	font-weight: 900;
+	text-decoration: none;
+	text-underline-offset: 0.32em;
+}
+
+.section-link-depth-3 {
+	padding-left: 14px;
+	font-size: 0.86rem;
+	font-weight: 800;
+	opacity: 0.82;
+}
+
+nav a:hover {
+	color: var(--hot);
+	text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+	aside {
+		position: static;
+		margin-bottom: 34px;
+	}
+
+	nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px 18px;
+	}
+}

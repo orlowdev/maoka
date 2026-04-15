@@ -1,0 +1,250 @@
+@import "../../src/common.css";
+
+.hero-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 24px;
+}
+
+.cta-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 44px;
+	padding: 0 18px;
+	border: 1px solid rgba(21, 18, 42, 0.1);
+	border-radius: 999px;
+	background: transparent;
+	box-shadow: none;
+	color: var(--night);
+	font-family: "Avenir Next Condensed", "Hiragino Sans", sans-serif;
+	font-size: 1rem;
+	font-weight: 1000;
+	letter-spacing: 0.12em;
+	text-decoration: none;
+	text-transform: uppercase;
+	transition:
+		border-color 140ms ease,
+		box-shadow 140ms ease,
+		color 140ms ease;
+}
+
+.cta-icon {
+	width: 34px;
+	height: 34px;
+	flex: 0 0 auto;
+	stroke: currentColor;
+	filter: drop-shadow(2px 0 0 rgba(0, 194, 255, 0.16));
+	transition: filter 140ms ease;
+}
+
+.cat-face-calm,
+.cat-face-scared {
+	transition: opacity 120ms ease;
+}
+
+.cat-face-scared {
+	opacity: 0;
+}
+
+.cta-link:hover .cat-face-calm,
+.cta-link:focus-visible .cat-face-calm {
+	opacity: 0;
+}
+
+.cta-link:hover .cat-face-scared,
+.cta-link:focus-visible .cat-face-scared {
+	opacity: 1;
+}
+
+.cta-link:hover .cta-icon,
+.cta-link:focus-visible .cta-icon {
+	filter:
+		drop-shadow(2px 0 0 rgba(0, 194, 255, 0.24))
+		drop-shadow(-2px 0 0 rgba(255, 61, 139, 0.18));
+}
+
+.cta-link:hover {
+	border-color: rgba(255, 61, 139, 0.58);
+	box-shadow:
+		-4px 8px 20px rgba(255, 61, 139, 0.34),
+		0 0 18px rgba(255, 61, 139, 0.26);
+	color: var(--hot);
+}
+
+.cta-link.is-secondary {
+	color: var(--muted);
+}
+
+.cta-link.is-secondary:hover {
+	border-color: rgba(0, 194, 255, 0.58);
+	box-shadow:
+		-4px 8px 20px rgba(0, 194, 255, 0.3),
+		0 0 18px rgba(0, 194, 255, 0.24);
+	color: var(--aqua);
+}
+
+.cta-link:focus-visible {
+	outline: 0;
+	border-color: rgba(255, 228, 92, 0.78);
+	box-shadow:
+		-4px 8px 20px rgba(255, 228, 92, 0.3),
+		0 0 0 1px rgba(255, 228, 92, 0.46) inset;
+}
+
+.landing-section {
+	margin-top: 72px;
+}
+
+.philosophy-section {
+	position: relative;
+}
+
+.philosophy-lines {
+	display: grid;
+	gap: 22px;
+	margin-top: 26px;
+}
+
+.philosophy-line {
+	display: grid;
+	grid-template-columns: 48px minmax(0, 1fr);
+	gap: 18px;
+	align-items: start;
+	padding: 0 0 22px;
+	border-bottom: 1px solid rgba(21, 18, 42, 0.12);
+}
+
+.philosophy-index {
+	color: var(--hot);
+	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-size: 0.78rem;
+	font-weight: 1000;
+	letter-spacing: 0.16em;
+	text-shadow:
+		2px 0 0 rgba(0, 194, 255, 0.22),
+		0 0 14px rgba(255, 61, 139, 0.24);
+}
+
+.philosophy-line h3 {
+	font-size: clamp(1.1rem, 2vw, 1.42rem);
+}
+
+.philosophy-line p {
+	max-width: 650px;
+	margin-top: 6px;
+}
+
+.install-section,
+.api-callout,
+.feature-card {
+	position: relative;
+	overflow: hidden;
+	border: 1px solid rgba(168, 255, 207, 0.28);
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(168, 255, 207, 0.18)),
+		radial-gradient(circle at 90% 0, rgba(0, 194, 255, 0.18), transparent 9rem);
+	box-shadow:
+		-14px 20px 54px rgba(168, 255, 207, 0.24),
+		inset 0 1px 0 rgba(255, 255, 255, 0.68);
+	backdrop-filter: blur(20px);
+}
+
+.install-section {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 22px;
+	align-items: center;
+	padding: 26px 28px;
+	border-radius: 34px 40px 38px 30px;
+}
+
+.install-section h2 {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+.install-command {
+	position: relative;
+	display: grid;
+	min-width: min(280px, 100%);
+	min-height: 82px;
+	padding: 0 24px;
+	border: 1px solid rgba(21, 18, 42, 0.22);
+	border-radius: 24px 30px 26px 22px;
+	background:
+		linear-gradient(115deg, rgba(21, 18, 42, 0.92), rgba(21, 18, 42, 0.72)),
+		radial-gradient(circle at 18% 0, rgba(168, 255, 207, 0.32), transparent 6rem);
+	box-shadow:
+		0 18px 44px rgba(21, 18, 42, 0.2),
+		0 0 38px rgba(168, 255, 207, 0.28);
+	color: #a8ffcf;
+	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-size: clamp(1rem, 3vw, 1.55rem);
+	font-weight: 900;
+	place-items: center;
+	text-shadow:
+		0 0 12px rgba(168, 255, 207, 0.78),
+		2px 0 0 rgba(0, 194, 255, 0.32);
+}
+
+.install-command::before {
+	content: "$";
+	opacity: 0.48;
+	position: absolute;
+	transform: translateX(-6.9em);
+}
+
+.feature-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+	margin-top: 22px;
+}
+
+.feature-card {
+	padding: 22px;
+	border-radius: 28px 34px 30px 24px;
+}
+
+.feature-card::before {
+	position: absolute;
+	left: 18px;
+	right: 18px;
+	top: 0;
+	height: 3px;
+	background: linear-gradient(90deg, var(--hot), var(--aqua), transparent);
+	content: "";
+}
+
+.feature-card p {
+	margin-top: 10px;
+}
+
+.api-callout {
+	padding: 30px;
+	border-radius: 38px 46px 42px 32px;
+}
+
+.api-callout h2 {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+.api-callout .cta-link {
+	margin-top: 22px;
+}
+
+@media (max-width: 860px) {
+	.feature-grid,
+	.install-section {
+		grid-template-columns: 1fr;
+	}
+
+	.install-command {
+		justify-self: stretch;
+	}
+}

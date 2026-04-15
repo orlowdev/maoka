@@ -1,0 +1,54 @@
+@import "../../src/common.css";
+
+.home-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 20px;
+	color: var(--violet);
+	font-size: 0.94rem;
+	font-weight: 900;
+	text-decoration: none;
+	text-underline-offset: 0.32em;
+}
+
+.home-link::before {
+	width: 18px;
+	height: 2px;
+	background: currentColor;
+	content: "";
+}
+
+.home-link:hover {
+	color: var(--hot);
+	text-decoration: underline;
+}
+
+ul {
+	display: grid;
+	gap: 14px;
+	margin: 18px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+li {
+	padding: 14px 0 14px 18px;
+	border-left: 4px solid rgba(255, 61, 139, 0.36);
+	background: linear-gradient(90deg, rgba(255, 255, 255, 0.54), transparent);
+}
+
+li strong,
+li span {
+	display: block;
+}
+
+li strong {
+	color: var(--ink);
+	font-family: "SF Mono", "Cascadia Code", monospace;
+	font-size: 0.92rem;
+}
+
+li span {
+	margin-top: 4px;
+}

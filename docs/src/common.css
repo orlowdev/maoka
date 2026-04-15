@@ -1,0 +1,220 @@
+:root {
+	color: #15122a;
+	background: #f7f5ff;
+	font-family: "Hiragino Sans", "Yu Gothic", "Avenir Next", sans-serif;
+	--ink: #15122a;
+	--muted: #635f86;
+	--panel: rgba(255, 255, 255, 0.78);
+	--line: rgba(41, 35, 87, 0.14);
+	--hot: #ff3d8b;
+	--aqua: #00c2ff;
+	--sun: #ffe45c;
+	--violet: #7657ff;
+	--night: #15122a;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-padding-top: 28px;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background:
+		radial-gradient(circle at 18% 10%, rgba(255, 61, 139, 0.28), transparent 20rem),
+		radial-gradient(circle at 86% 8%, rgba(0, 194, 255, 0.26), transparent 22rem),
+		radial-gradient(circle at 70% 84%, rgba(255, 228, 92, 0.22), transparent 19rem),
+		radial-gradient(circle, rgba(21, 18, 42, 0.16) 1px, transparent 1.4px),
+		#f7f5ff;
+	background-size: auto, auto, auto, 24px 24px, auto;
+	color: var(--ink);
+}
+
+body::before {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	background:
+		linear-gradient(115deg, transparent 0 42%, rgba(255, 61, 139, 0.12) 42% 44%, transparent 44%),
+		linear-gradient(295deg, transparent 0 68%, rgba(0, 194, 255, 0.14) 68% 70%, transparent 70%);
+	clip-path: polygon(0 0, 100% 0, 100% 86%, 70% 100%, 0 100%);
+	content: "";
+	pointer-events: none;
+}
+
+body::after {
+	position: fixed;
+	right: clamp(18px, 5vw, 72px);
+	top: clamp(18px, 5vw, 72px);
+	z-index: -1;
+	width: 96px;
+	height: 96px;
+	border: 2px solid rgba(255, 61, 139, 0.48);
+	border-radius: 28px;
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.12)),
+		radial-gradient(circle at 30% 28%, rgba(255, 228, 92, 0.9), transparent 1.1rem);
+	box-shadow:
+		0 0 0 8px rgba(255, 255, 255, 0.28),
+		0 24px 60px rgba(118, 87, 255, 0.22);
+	color: var(--hot);
+	content: "사할린";
+	display: grid;
+	font-family: "Avenir Next Condensed", "Hiragino Sans", sans-serif;
+	font-size: 1.26rem;
+	font-weight: 1000;
+	letter-spacing: 0.12em;
+	line-height: 0.88;
+	place-items: center;
+	text-align: center;
+	white-space: pre;
+	transform: rotate(10deg);
+}
+
+main {
+	width: min(1120px, calc(100% - 32px));
+	margin: 0 auto;
+	padding: 52px 0 88px;
+}
+
+.docs-layout {
+	display: grid;
+	grid-template-columns: 196px minmax(0, 780px);
+	gap: 58px;
+	align-items: start;
+}
+
+article,
+.demo-page {
+	max-width: 780px;
+}
+
+header {
+	position: relative;
+	margin-bottom: 46px;
+	padding-bottom: 30px;
+}
+
+header::before {
+	position: absolute;
+	right: 0;
+	top: 4px;
+	width: 88px;
+	height: 10px;
+	background: linear-gradient(90deg, var(--hot), var(--sun), var(--aqua));
+	clip-path: polygon(0 0, 100% 0, 86% 100%, 0% 100%);
+	content: "";
+}
+
+header::after {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 2px;
+	background:
+		linear-gradient(90deg, var(--hot), var(--aqua) 34%, transparent 34%),
+		linear-gradient(90deg, transparent 0 42%, rgba(21, 18, 42, 0.18) 42% 100%);
+	content: "";
+}
+
+.demo-header {
+	margin-bottom: 30px;
+}
+
+.eyebrow {
+	margin: 0 0 12px;
+	color: var(--hot);
+	font-size: 0.76rem;
+	font-weight: 1000;
+	letter-spacing: 0.24em;
+	text-transform: uppercase;
+}
+
+h1,
+h2 {
+	margin: 0;
+	color: var(--ink);
+	font-weight: 1000;
+	letter-spacing: -0.06em;
+}
+
+h1 {
+	max-width: 760px;
+	font-size: clamp(2.4rem, 5vw, 4.2rem);
+	line-height: 0.98;
+	text-shadow: 0.035em 0.035em 0 rgba(0, 194, 255, 0.22);
+}
+
+h2 {
+	margin-top: 44px;
+	padding-top: 20px;
+	border-top: 1px solid var(--line);
+	font-size: clamp(1.55rem, 3vw, 2.25rem);
+	line-height: 1.08;
+}
+
+h2::before {
+	color: var(--hot);
+	content: "# ";
+	font-family: "SF Mono", "Cascadia Code", monospace;
+	letter-spacing: 0;
+}
+
+h3 {
+	margin: 0;
+	color: var(--night);
+	font-size: 1.08rem;
+	font-weight: 1000;
+	letter-spacing: -0.02em;
+}
+
+article > section:first-of-type h2 {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+p,
+li {
+	color: var(--muted);
+	font-size: 1rem;
+	line-height: 1.78;
+}
+
+p {
+	margin: 14px 0 0;
+}
+
+.lede {
+	max-width: 700px;
+	color: var(--ink);
+	font-size: 1.12rem;
+}
+
+section {
+	margin: 0;
+}
+
+@media (max-width: 860px) {
+	body::after {
+		display: none;
+	}
+
+	main {
+		width: min(100% - 24px, 780px);
+		padding-top: 28px;
+	}
+
+	.docs-layout {
+		display: block;
+	}
+
+	header::before {
+		display: none;
+	}
+}

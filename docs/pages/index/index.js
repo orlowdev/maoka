@@ -1,8 +1,9 @@
-import maoka from "../index.js"
-import { render } from "../dom/index.js"
-import { CodeDemo } from "./src/components/code-demo.js"
-import { DocsNav } from "./src/components/docs-nav.js"
-import { Konnichiwa } from "./src/examples/konnichiwa.js"
+import "./style.css"
+import maoka from "../../../index.js"
+import { render } from "../../../dom/index.js"
+import { CodeDemo } from "../../src/components/code-demo.js"
+import { DocsNav } from "../../src/components/docs-nav.js"
+import { Konnichiwa } from "../../src/examples/konnichiwa.js"
 
 const helloExample = `import maoka from "maoka"
 import { render } from "maoka/dom"
@@ -53,12 +54,12 @@ const Page = maoka.create(() => () => [
 
 								return () => [
 									CtaLink(() => ({
-										href: "/getting-started.html",
+										href: "/getting-started",
 										icon: "pacifier",
 										label: "Start building",
 									})),
 									CtaLink(() => ({
-										href: "/api.html",
+										href: "/api",
 										icon: "api",
 										label: "Read API",
 										secondary: true,
@@ -223,7 +224,7 @@ const ApiCta = maoka.html.section(({ value }) => {
 			"Types, renderers, test tools, lifecycle hooks, and the exact places where the weirdness becomes useful.",
 		),
 		CtaLink(() => ({
-			href: "/api.html",
+			href: "/api",
 			icon: "api",
 			label: "Open API docs",
 		})),

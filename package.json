@@ -22,6 +22,8 @@
 		}
 	},
 	"scripts": {
+		"build": "bun run build:docs",
+		"build:docs": "bun docs/build.js",
 		"docs": "bun --watch docs/server.js"
 	},
 	"devDependencies": {

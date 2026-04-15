@@ -6,19 +6,25 @@ const server = Bun.serve({
 	async fetch(request) {
 		const url = new URL(request.url)
 		const pathname = getPathname(url.pathname)
-		let file = Bun.file(new URL(`.${pathname}`, root))
+		const pageAsset = await buildPageAsset(pathname)
 
-		if (!(await file.exists()) && !pathname.startsWith("/docs/")) {
-			file = Bun.file(new URL(`./docs${pathname}`, root))
+		if (pageAsset) {
+			return new Response(pageAsset.body, {
+				headers: {
+					"Content-Type": getContentType(pathname),
+				},
+			})
 		}
 
-		if (!(await file.exists())) {
+		const result = await findFile(pathname)
+
+		if (!result) {
 			return new Response("Not found", { status: 404 })
 		}
 
-		return new Response(file, {
+		return new Response(result.file, {
 			headers: {
-				"Content-Type": getContentType(pathname),
+				"Content-Type": getContentType(result.pathname),
 			},
 		})
 	},
@@ -26,11 +32,84 @@ const server = Bun.serve({
 
 console.log(`Maoka docs: http://localhost:${server.port}`)
 
+const docsRoot = new URL("./", import.meta.url)
+
 const getPathname = pathname => {
-	if (pathname === "/") return "/docs/index.html"
+	if (pathname === "/") return "/index"
 
 	return pathname
 }
+
+const findFile = async pathname => {
+	for (const candidate of getFileCandidates(pathname)) {
+		const file = Bun.file(new URL(`.${candidate}`, root))
+
+		if (await file.exists()) {
+			return { file, pathname: candidate }
+		}
+	}
+
+	return null
+}
+
+const buildPageAsset = async pathname => {
+	const match = pathname.match(/^\/pages\/([^/]+)\/index\.(css|js)$/)
+
+	if (!match) return null
+
+	const [, page, extension] = match
+	const result = await Bun.build({
+		entrypoints: [new URL(`pages/${page}/index.js`, docsRoot).pathname],
+		format: "esm",
+		target: "browser",
+	})
+
+	if (!result.success) {
+		for (const log of result.logs) {
+			console.error(log)
+		}
+
+		return null
+	}
+
+	const output = result.outputs.find(output =>
+		extension === "css"
+			? output.type.startsWith("text/css")
+			: output.type.startsWith("text/javascript"),
+	)
+
+	if (!output) return null
+
+	return { body: await output.text() }
+}
+
+const getFileCandidates = pathname => {
+	const candidates = []
+	const addCandidates = candidate => {
+		candidates.push(candidate)
+
+		if (!hasExtension(candidate)) {
+			candidates.push(`${candidate}.html`)
+		}
+	}
+
+	if (pathname.startsWith("/pages/")) {
+		addCandidates(`/docs${pathname}`)
+	} else if (pathname.startsWith("/src/")) {
+		addCandidates(`/docs${pathname}`)
+	} else if (hasExtension(pathname)) {
+		addCandidates(pathname)
+		addCandidates(`/docs${pathname}`)
+	} else {
+		addCandidates(`/docs/pages${pathname}/index.html`)
+		addCandidates(pathname)
+	}
+
+	return candidates
+}
+
+const hasExtension = pathname =>
+	pathname.split("/").at(-1)?.includes(".") ?? false
 
 const getContentType = pathname => {
 	if (pathname.endsWith(".html")) return "text/html; charset=utf-8"

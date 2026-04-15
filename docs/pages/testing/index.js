@@ -1,10 +1,12 @@
-import maoka from "../index.js"
-import { render } from "../dom/index.js"
-import { CodeBlock } from "./src/components/code-block.js"
-import { DocsNav } from "./src/components/docs-nav.js"
+import "./style.css"
+import maoka from "../../../index.js"
+import { render } from "../../../dom/index.js"
+import { CodeBlock } from "../../src/components/code-block.js"
+import { DocsNav } from "../../src/components/docs-nav.js"
 
 const componentExample = `import { expect, test } from "bun:test"
 
+import "./style.css"
 import maoka from "maoka"
 import { render } from "maoka/test"
 
@@ -44,6 +46,7 @@ test("Counter refreshes without DOM", () => {
 
 const componentExampleTs = `import { expect, test } from "bun:test"
 
+import "./style.css"
 import maoka from "maoka"
 import { render } from "maoka/test"
 
@@ -162,14 +165,7 @@ const Page = maoka.create(() => () => [
 		value.className = "docs-layout"
 
 		return () => [
-			DocsNav(() => ({
-				sections: [
-					{ id: "overview", label: "Overview" },
-					{ id: "components", label: "Components" },
-					{ id: "jabs", label: "Jabs" },
-					{ id: "api", label: "API" },
-				],
-			})),
+			DocsNav(),
 			maoka.html.article(() => () => [
 				Hero(),
 				Section(() => ({
@@ -212,7 +208,7 @@ const Hero = maoka.html.header(() => () => [
 			"The test renderer gives Maoka code a tiny in-memory stage: enough surface for behavior tests, no DOM ceremony, and no fake lifecycle model."
 	})(),
 	maoka.html.a(({ value }) => {
-		value.href = "/docs/index.html"
+		value.href = "/"
 		value.className = "home-link"
 
 		return () => "Back to demo"
