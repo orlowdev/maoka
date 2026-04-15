@@ -95,34 +95,34 @@ const Philosophy = maoka.html.section(({ value }) => {
 
 			return () => "Philosophy"
 		})(),
-		maoka.html.h2(() => () => "The way"),
+		maoka.html.h2(() => () => "Core Concepts"),
 		maoka.html.div(({ value }) => {
 			value.className = "philosophy-lines"
 
 			return () => [
 				PhilosophyLine(() => ({
 					index: "01",
-					title: "A view may be declared, but change must be invited.",
+					title: "Creating is separate from being",
 					body:
-						"The tree is a statement of shape. Updating it is a conscious act: a signal that the old statement has become insufficient.",
+						"Maoka components are split into two phases. Genesis - the create phase - defines the destiny of the component: its potential, limits, and powers. Emanation - the render phase - shifts the component's presence within the reality it inhabits, forcing it to adapt under the capabilities genesis provides.",
 				})),
 				PhilosophyLine(() => ({
 					index: "02",
-					title: "Behavior grows beside the component, not inside its shadow.",
+					title: "Extension is pervasive",
 					body:
-						"Effects, policies, and derived state should have room to attach horizontally, without turning the component into a corridor of hidden obligations.",
+						"Maoka lets components use jabs to share creation traits. Unlike other schools of thought, Maoka promotes radical responsibility in its complete and holistic form. Every jab should be treated like a gene, affecting genesis and emanation in their totality.",
 				})),
 				PhilosophyLine(() => ({
 					index: "03",
-					title: "Lifecycle is not an afterthought.",
+					title: "Lifecycle is fatal",
 					body:
-						"To react to change, refusal, and failure is not outside the life of a component. It is the life of the component.",
+						"Lifecycle is defined at the moment of creation, as emanation is only a photograph of life in the eyes of the beholder. Any attempt to outsmart destiny may wake the grim God of infinite loops. Consider yourself warned.",
 				})),
 				PhilosophyLine(() => ({
 					index: "04",
-					title: "Rendering is the trace, not the source.",
+					title: "Value is the body, Node is the soul",
 					body:
-						"What appears on screen is only one possible footprint of the model. The important thing is the shape of intent before it becomes pixels.",
+						"Most of the time, working really hard does not make you a billionaire. In the same way, Maoka components do not become billionaires if they were destined to be divs. This perpetual binding happens in the Nodes that Maoka components create. You can't reach them, you can't prove they are there, but no matter what body they are rendered as, they live within the lifelines the Creator predefines.",
 				})),
 			]
 		})(),
@@ -145,8 +145,29 @@ const PhilosophyLine = maoka.html.div(({ props$, value }) => {
 	]
 })
 
-const InstallCta = maoka.html.section(({ value }) => {
+const InstallCta = maoka.html.section(({ lifecycle, refresh$, value }) => {
+	const command = "npm i maoka"
+	let toastVisible = false
+	let toastTimeout = null
+
 	value.className = "landing-section install-section"
+
+	const showToast = () => {
+		toastVisible = true
+		refresh$()
+
+		if (toastTimeout) clearTimeout(toastTimeout)
+
+		toastTimeout = setTimeout(() => {
+			toastVisible = false
+			toastTimeout = null
+			refresh$()
+		}, 3000)
+	}
+
+	lifecycle.beforeUnmount(() => {
+		if (toastTimeout) clearTimeout(toastTimeout)
+	})
 
 	return () => [
 		maoka.html.div(({ value }) => {
@@ -156,20 +177,66 @@ const InstallCta = maoka.html.section(({ value }) => {
 				maoka.html.p(({ value }) => {
 					value.className = "eyebrow"
 
-					return () => "Install"
+					return () => "Поехали!"
 				})(),
-				maoka.html.h2(() => () => "Drop it into a Bun project"),
+				maoka.html.h2(() => () => "Install"),
+				maoka.html.p(() => () =>
+					"Maoka is written in JavaScript and ships with types included, so you can hop onto the adventure right away.",
+				),
 			]
 		})(),
 		maoka.html.div(({ value }) => {
-			value.className = "install-command"
+			value.className = "install-action"
 
 			return () => [
-				maoka.html.span(() => () => "bun i maoka"),
+				InstallCommand(() => ({ command, showToast })),
+				toastVisible ? InstallToast() : null,
 			]
 		})(),
 	]
 })
+
+const InstallCommand = maoka.html.button(({ props$, value }) => {
+	value.type = "button"
+	value.className = "install-command"
+	value.setAttribute("aria-label", "Copy install command")
+	value.onclick = async () => {
+		await copyText(props$().command)
+		props$().showToast()
+	}
+
+	return () => [
+		maoka.html.span(() => () => props$().command),
+	]
+})
+
+const InstallToast = maoka.html.div(({ value }) => {
+	value.className = "install-toast"
+	value.setAttribute("role", "status")
+	value.setAttribute("aria-live", "polite")
+
+	return () => "Copied. So lazy of you!"
+})
+
+const copyText = async text => {
+	if (globalThis.navigator?.clipboard?.writeText) {
+		try {
+			await globalThis.navigator.clipboard.writeText(text)
+			return
+		} catch {}
+	}
+
+	const textarea = document.createElement("textarea")
+
+	textarea.value = text
+	textarea.setAttribute("readonly", "")
+	textarea.style.position = "fixed"
+	textarea.style.opacity = "0"
+	document.body.append(textarea)
+	textarea.select()
+	document.execCommand("copy")
+	textarea.remove()
+}
 
 const KillerFeatures = maoka.html.section(({ value }) => {
 	value.className = "landing-section"
