@@ -23,6 +23,54 @@ const Konnichiwa = maoka.html.div<{ name: string }>(({ props$ }) => {
 
 render(document.body, Konnichiwa(() => ({ name: "真岡" })))`
 
+const runtimeFeatures = [
+	{
+		slot: "is-pos-1",
+		tilt: "is-tilt-left",
+		title: "Renderer-agnostic components",
+		highlight: "rendered by the DOM adapter, the test adapter, or a custom renderer",
+		body:
+			"Components create Maoka nodes, not DOM nodes. The same component can be rendered by the DOM adapter, the test adapter, or a custom renderer without changing the component itself.",
+	},
+	{
+		slot: "is-pos-2",
+		tilt: "is-tilt-right",
+		title: "Creation and render are separate",
+		body:
+			"The component definition runs once and returns a render function. State, lifecycle handlers, and behavior are captured during creation; output is produced later by render.",
+	},
+	{
+		slot: "is-pos-3",
+		tilt: "is-tilt-soft-left",
+		title: "Pure nodes diff their props",
+		highlight: "Maoka reuses its node and updates its props source.",
+		body:
+			"When a child keeps the same key and component type, Maoka reuses its node and updates its props source. props$() detects changed values and queues refresh without remounting.",
+	},
+	{
+		slot: "is-pos-4",
+		tilt: "is-tilt-soft-right",
+		title: "Children reconcile by identity",
+		body:
+			"Rendered children are matched by key when a key exists, or by position otherwise. Matching nodes stay mounted while Maoka moves, inserts, or removes renderer values.",
+	},
+	{
+		slot: "is-pos-5",
+		tilt: "is-tilt-left",
+		title: "Jabs are direct hooks",
+		highlight: "use(jab) runs the jab immediately with the component params.",
+		body:
+			"use(jab) runs the jab immediately with the component params. A jab captures the state and lifecycle behavior it creates instead of leaving hidden cleanup work behind.",
+	},
+	{
+		slot: "is-pos-6",
+		tilt: "is-tilt-right",
+		title: "Tests run without a browser",
+		body:
+			"The test renderer builds an in-memory tree, so components and jabs can be tested without jsdom or a browser while keeping lifecycle, props diffing, and reconciliation behavior intact.",
+	},
+]
+
 const Page = maoka.create(() => () => [
 	maoka.html.main(({ value }) => {
 		value.className = "docs-layout"
@@ -150,6 +198,7 @@ const InstallCta = maoka.html.section(({ lifecycle, refresh$, value }) => {
 	let toastVisible = false
 	let toastTimeout = null
 
+	value.id = "install"
 	value.className = "landing-section install-section"
 
 	const showToast = () => {
@@ -239,39 +288,28 @@ const copyText = async text => {
 }
 
 const KillerFeatures = maoka.html.section(({ value }) => {
-	value.className = "landing-section"
+	value.className = "landing-section features-section"
 
 	return () => [
-		maoka.html.p(({ value }) => {
-			value.className = "eyebrow"
-
-			return () => "Killer features"
-		})(),
-		maoka.html.h2(() => () => "Small surface, sharp edges"),
 		maoka.html.div(({ value }) => {
-			value.className = "feature-grid"
+			value.className = "feature-stage"
 
 			return () => [
-				Feature(() => ({
-					title: "Two-phase components",
-					body:
-						"Definitions run once. Render functions rerun when refresh says the node should update.",
-				})),
-				Feature(() => ({
-					title: "Keyed child diffing",
-					body:
-						"Move, add, and remove children without remounting the whole list just because order changed.",
-				})),
-				Feature(() => ({
-					title: "Renderer-agnostic root",
-					body:
-						"The root queues refreshes and asks the renderer what to do, so DOM and tests share the same model.",
-				})),
-				Feature(() => ({
-					title: "Jabs as behavior layers",
-					body:
-						"use() lets behavior grow sideways: lifecycle, refresh, and derived state can live outside the component body.",
-				})),
+				maoka.html.p(({ value }) => {
+					value.className = "eyebrow feature-eyebrow"
+
+					return () => "Runtime features"
+				})(),
+				maoka.html.h2(({ value }) => {
+					value.className = "feature-title"
+
+					return () => "What Maoka actually does"
+				})(),
+				maoka.html.div(({ value }) => {
+					value.className = "feature-grid"
+
+					return () => runtimeFeatures.map(feature => Feature(() => feature))
+				})(),
 			]
 		})(),
 	]
@@ -299,12 +337,44 @@ const ApiCta = maoka.html.section(({ value }) => {
 })
 
 const Feature = maoka.html.article(({ props$, value }) => {
-	value.className = "feature-card"
+	return () => {
+		value.className = ["feature-card", props$().slot, props$().tilt]
+			.filter(Boolean)
+			.join(" ")
 
-	return () => [
-		maoka.html.h3(() => () => props$().title),
-		maoka.html.p(() => () => props$().body),
-	]
+		return [
+			maoka.html.div(({ value }) => {
+				value.className = "feature-card-title"
+
+				return () => props$().title
+			})(),
+			FeatureBody(() => ({
+				body: props$().body,
+				highlight: props$().highlight,
+			})),
+		]
+	}
+})
+
+const FeatureBody = maoka.html.p(({ props$ }) => {
+	return () => {
+		const { body, highlight } = props$()
+		const parts = body.split(highlight)
+
+		if (parts.length < 2) return body
+
+		return [
+			parts[0],
+			FeatureHighlight(() => ({ text: highlight })),
+			parts.slice(1).join(highlight),
+		]
+	}
+})
+
+const FeatureHighlight = maoka.html.mark(({ props$, value }) => {
+	value.className = "feature-highlight"
+
+	return () => props$().text
 })
 
 const CtaLink = maoka.html.a(({ props$, value }) => {
@@ -356,11 +426,13 @@ const ApiCatIcon = () => [
 	SvgPath(() => ({
 		className: "cat-face-calm",
 		d: "M18 43C22 41 27 41.5 32 44V55C27 52.5 22 52 18 54Z",
+		fill: "var(--cta-icon-fill)",
 		strokeWidth: "2.2",
 	})),
 	SvgPath(() => ({
 		className: "cat-face-calm",
 		d: "M32 44C37 41.5 42 41 46 43V54C42 52 37 52.5 32 55Z",
+		fill: "var(--cta-icon-fill)",
 		strokeWidth: "2.2",
 	})),
 	SvgPath(() => ({
@@ -373,6 +445,7 @@ const ApiCatIcon = () => [
 const CatFace = () => [
 	SvgPath(() => ({
 		d: "M18 28C16.5 22 15.5 14 20 12.5 25 13.2 30 18 32 18S39 13.2 44 12.5C48.5 14 47.5 22 46 28 50 37 45 50 32 50S14 37 18 28Z",
+		fill: "var(--cta-icon-fill)",
 	})),
 	SvgPath(() => ({
 		d: "M23 32C24.5 29.8 27.5 29.8 29 32M35 32C36.5 29.8 39.5 29.8 41 32",

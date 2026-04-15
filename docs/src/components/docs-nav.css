@@ -39,7 +39,7 @@ nav {
 .sections-nav::before {
 	margin-bottom: 8px;
 	color: var(--hot);
-	content: "On this page / глава";
+	content: "On this page";
 	font-family: var(--font-sans);
 	font-size: 0.72rem;
 	font-weight: 1000;
