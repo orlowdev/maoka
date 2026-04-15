@@ -44,16 +44,14 @@ const scheduleAnimationFrame = flush => {
 }
 
 const cancelAnimationFrameRefresh = scheduledRefresh => {
-	if (
-		scheduledRefresh !== null &&
-		typeof cancelAnimationFrame === "function"
-	) {
+	if (scheduledRefresh !== null && typeof cancelAnimationFrame === "function") {
 		cancelAnimationFrame(scheduledRefresh)
 	}
 }
 
 const refreshNode = node => {
-	node.value.textContent = node.lastRenderResult == null ? "" : String(node.lastRenderResult)
+	node.value.textContent =
+		node.lastRenderResult == null ? "" : String(node.lastRenderResult)
 }
 
 const insertNode = (parent, node, index) => {
@@ -89,8 +87,10 @@ const createElement = (document, tag) => {
 
 	if (tag.namespace === "html") return document.createElement(tag.tag)
 
-	if (SVG_TAGS.includes(tag)) return document.createElementNS(SVG_NAMESPACE, tag)
-	if (MATH_TAGS.includes(tag)) return document.createElementNS(MATH_NAMESPACE, tag)
+	if (SVG_TAGS.includes(tag))
+		return document.createElementNS(SVG_NAMESPACE, tag)
+	if (MATH_TAGS.includes(tag))
+		return document.createElementNS(MATH_NAMESPACE, tag)
 
 	return document.createElement(tag)
 }

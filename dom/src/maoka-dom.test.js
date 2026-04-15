@@ -1,19 +1,23 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
 import maoka from "../../index.js"
-import { render } from "../index.js"
+import maokaDom, { render } from "../index.js"
 
 const originalRequestAnimationFrame = globalThis.requestAnimationFrame
 const originalCancelAnimationFrame = globalThis.cancelAnimationFrame
+const originalElement = globalThis.Element
+const originalHTMLElement = globalThis.HTMLElement
 
 afterEach(() => {
 	globalThis.requestAnimationFrame = originalRequestAnimationFrame
 	globalThis.cancelAnimationFrame = originalCancelAnimationFrame
+	globalThis.Element = originalElement
+	globalThis.HTMLElement = originalHTMLElement
 })
 
 class FakeDocument {
 	createElement(tag) {
-		return new FakeElement(this, tag, "html")
+		return new FakeHTMLElement(this, tag, "html")
 	}
 
 	createElementNS(namespaceURI, tag) {
@@ -89,6 +93,8 @@ class FakeElement {
 	}
 }
 
+class FakeHTMLElement extends FakeElement {}
+
 class FakeText {
 	constructor(ownerDocument, textContent) {
 		this.ownerDocument = ownerDocument
@@ -113,6 +119,36 @@ const isAncestorOf = (ancestor, child) => {
 }
 
 describe("maokaDom.render", () => {
+	test("ifInDOM runs for any DOM element", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const seenTags = []
+		const HtmlProbe = maoka.html.button(({ use }) => {
+			use(
+				maokaDom.jabs.ifInDOM(({ value }) => {
+					seenTags.push(value.tagName)
+				}),
+			)
+
+			return () => "HTML"
+		})
+		const SvgProbe = maoka.svg.circle(({ use }) => {
+			use(
+				maokaDom.jabs.ifInDOM(({ value }) => {
+					seenTags.push(value.tagName)
+				}),
+			)
+
+			return () => ""
+		})
+
+		render(createContainer(), HtmlProbe)
+		render(createContainer(), SvgProbe)
+
+		expect(seenTags).toEqual(["button", "circle"])
+	})
+
 	test("renders component templates into a DOM container", () => {
 		const container = createContainer()
 		const Counter = maoka.create(() => () => [
