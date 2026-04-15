@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+	<title id="title">Maoka icon</title>
+	<desc id="desc">Maoka documentation icon with a dotted background and vibrant accent shapes.</desc>
+	<defs>
+		<linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0%" stop-color="#fffaf7" />
+			<stop offset="58%" stop-color="#faf7ff" />
+			<stop offset="100%" stop-color="#f4fbff" />
+		</linearGradient>
+		<radialGradient id="hotGlow" cx="18%" cy="12%" r="38%">
+			<stop offset="0%" stop-color="#ff3d8b" stop-opacity="0.28" />
+			<stop offset="100%" stop-color="#ff3d8b" stop-opacity="0" />
+		</radialGradient>
+		<radialGradient id="aquaGlow" cx="84%" cy="14%" r="34%">
+			<stop offset="0%" stop-color="#00c2ff" stop-opacity="0.24" />
+			<stop offset="100%" stop-color="#00c2ff" stop-opacity="0" />
+		</radialGradient>
+		<radialGradient id="sunGlow" cx="72%" cy="84%" r="34%">
+			<stop offset="0%" stop-color="#ffe45c" stop-opacity="0.18" />
+			<stop offset="100%" stop-color="#ffe45c" stop-opacity="0" />
+		</radialGradient>
+		<linearGradient id="headerBar" x1="0" y1="0" x2="1" y2="0">
+			<stop offset="0%" stop-color="#ff3d8b" />
+			<stop offset="52%" stop-color="#ffe45c" />
+			<stop offset="100%" stop-color="#00c2ff" />
+		</linearGradient>
+		<pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+			<circle cx="1.2" cy="1.2" r="1.2" fill="#15122a" fill-opacity="0.16" />
+		</pattern>
+	</defs>
+	<rect width="512" height="512" rx="120" fill="url(#paper)" />
+	<rect width="512" height="512" rx="120" fill="url(#dots)" />
+	<rect width="512" height="512" rx="120" fill="url(#hotGlow)" />
+	<rect width="512" height="512" rx="120" fill="url(#aquaGlow)" />
+	<rect width="512" height="512" rx="120" fill="url(#sunGlow)" />
+	<path d="M332 68h96v16l-18 14h-78z" fill="url(#headerBar)" />
+	<rect x="72" y="86" width="112" height="10" rx="5" fill="#ff8f5a" />
+	<text x="72" y="138" fill="#ff3d8b" font-family="Inter, 'SF Pro', system-ui, sans-serif" font-size="22" font-weight="900" letter-spacing="4">DOCS</text>
+	<text x="72" y="298" fill="#15122a" font-family="Inter, 'SF Pro', system-ui, sans-serif" font-size="196" font-weight="900" letter-spacing="-10">真</text>
+	<path d="M72 356h156" stroke="#ff8f5a" stroke-width="8" stroke-linecap="round" />
+	<path d="M250 356h128" stroke="#15122a" stroke-opacity="0.16" stroke-width="8" stroke-linecap="round" />
+	<text x="72" y="412" fill="#15122a" font-family="'Fira Code', monospace" font-size="28" font-weight="700">maoka</text>
+</svg>

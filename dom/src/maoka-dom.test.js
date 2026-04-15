@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test"
 
 import maoka from "../../index.js"
 import maokaDom, { render } from "../index.js"
-import { TodoApp } from "../../docs/src/examples/todo.js"
 
 const originalRequestAnimationFrame = globalThis.requestAnimationFrame
 const originalCancelAnimationFrame = globalThis.cancelAnimationFrame
@@ -241,6 +240,77 @@ describe("maokaDom.render", () => {
 		expect(canceledFrames).toEqual([1])
 	})
 
+	test("falls back to microtasks when requestAnimationFrame is unavailable", async () => {
+		globalThis.requestAnimationFrame = undefined
+		globalThis.cancelAnimationFrame = undefined
+
+		const container = createContainer()
+		let count = 0
+		let refresh
+		const Count = maoka.html.output(({ props }) => {
+			return () => `Count: ${props().count}`
+		})
+		const Counter = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () => Count(() => ({ count }))
+		})
+
+		render(container, Counter)
+
+		expect(container.children[0].textContent).toBe("Count: 0")
+
+		count = 1
+		refresh()
+		await Promise.resolve()
+
+		expect(container.children[0].textContent).toBe("Count: 1")
+	})
+
+	test("allows refreshing through the synthetic root parent", () => {
+		const scheduledFrames = []
+
+		globalThis.requestAnimationFrame = flush => {
+			scheduledFrames.push(flush)
+
+			return scheduledFrames.length
+		}
+		globalThis.cancelAnimationFrame = () => {}
+
+		const container = createContainer()
+		let count = 0
+		const Count = maoka.html.output(({ props }) => () => `Count: ${props().count}`)
+		const App = maoka.create(() => () => Count(() => ({ count })))
+		const root = render(container, App)
+
+		expect(root.children[0].parent.props()).toEqual({ key: root.key })
+		expect(root.children[0].parent.render()).toBe(root.children)
+
+		count = 1
+		root.children[0].parent.refresh$()
+
+		expect(scheduledFrames).toHaveLength(1)
+		expect(() => scheduledFrames[0]()).not.toThrow()
+	})
+
+	test("creates svg and math elements from plain string tags", () => {
+		const container = createContainer()
+		const SvgCircle = maoka.pure("circle", () => () => "")
+		const MathFraction = maoka.pure("mfrac", () => () => "")
+		const App = maoka.create(() => () => [SvgCircle(), MathFraction()])
+
+		render(container, App)
+
+		expect(container.children[0].tagName).toBe("circle")
+		expect(container.children[0].namespaceURI).toBe(
+			"http://www.w3.org/2000/svg",
+		)
+		expect(container.children[1].tagName).toBe("mfrac")
+		expect(container.children[1].namespaceURI).toBe(
+			"http://www.w3.org/1998/Math/MathML",
+		)
+	})
+
 	test("keeps surrounding sibling order when an implicit child refreshes", () => {
 		const scheduledFrames = []
 
@@ -325,7 +395,7 @@ describe("maokaDom.render", () => {
 		expect(reinserts).toBe(0)
 	})
 
-	test("updates the DOM when removing a todo from the docs example", () => {
+	test("keeps ancestor sibling order when an implicit nested child appears", () => {
 		const scheduledFrames = []
 
 		globalThis.requestAnimationFrame = flush => {
@@ -336,22 +406,43 @@ describe("maokaDom.render", () => {
 		globalThis.cancelAnimationFrame = () => {}
 
 		const container = createContainer()
+		let showDetails = false
+		let refresh
+		const Title = maoka.html.h2(() => () => "Orders")
+		const Summary = maoka.html.output(() => () => "Summary")
+		const Details = maoka.html.output(() => () => "Details")
+		const Nested = maoka.create(({ props }) => () =>
+			props().showDetails ? Details() : null,
+		)
+		const Wrapper = maoka.create(({ props }) => () =>
+			Nested(() => ({ showDetails: props().showDetails })),
+		)
+		const App = maoka.create(params => {
+			refresh = params.refresh$
 
-		render(container, TodoApp())
+			return () => [
+				Title(),
+				Wrapper(() => ({ showDetails })),
+				Summary(),
+			]
+		})
 
-		const preview = container.children[0]
-		const list = preview.children[3]
-		const getLabels = () =>
-			list.children.map(item => item.children[0].children[1].textContent)
+		render(container, App)
 
-		expect(list.children).toHaveLength(2)
-		expect(getLabels()).toEqual(["Install maoka", "Build a todo app"])
+		expect(container.children.map(child => child.textContent)).toEqual([
+			"Orders",
+			"Summary",
+		])
 
-		list.children[0].children[1].onclick()
+		showDetails = true
+		refresh()
 		scheduledFrames[0]()
 
-		expect(list.children).toHaveLength(1)
-		expect(getLabels()).toEqual(["Build a todo app"])
+		expect(container.children.map(child => child.textContent)).toEqual([
+			"Orders",
+			"Details",
+			"Summary",
+		])
 	})
 
 	test("diffs keyed children by moving, removing, and inserting DOM nodes", () => {

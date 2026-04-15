@@ -1,0 +1,53 @@
+@import "../../src/common.css";
+
+.practice-examples {
+	display: grid;
+	gap: 18px;
+	margin-top: 18px;
+}
+
+.practice-example {
+	padding: 18px;
+	border: 1px solid var(--line);
+	border-radius: 18px;
+	background: var(--panel);
+	backdrop-filter: blur(12px);
+}
+
+.practice-example-good {
+	box-shadow: inset 0 0 0 1px rgba(0, 194, 255, 0.12);
+}
+
+.practice-example-bad {
+	box-shadow: inset 0 0 0 1px rgba(255, 61, 139, 0.12);
+}
+
+.practice-example-heading {
+	margin-bottom: 14px;
+}
+
+.practice-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.28rem 0.62rem;
+	border-radius: 999px;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.practice-badge-good {
+	color: #005e7c;
+	background: rgba(0, 194, 255, 0.14);
+}
+
+.practice-badge-bad {
+	color: #9b1450;
+	background: rgba(255, 61, 139, 0.14);
+}
+
+.practice-links a {
+	color: var(--violet);
+}

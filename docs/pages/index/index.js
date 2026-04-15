@@ -92,13 +92,13 @@ const Page = maoka.create(() => () => [
 								return () =>
 									"A UI library for on-demand rendering of user interfaces."
 							})(),
-								maoka.html.div(({ value }) => {
-									value.className = "hero-actions"
+							maoka.html.div(({ value }) => {
+								value.className = "hero-actions"
 
-									return () => [
-										CtaLink(() => ({
-											href: "/api",
-											icon: "api",
+								return () => [
+									CtaLink(() => ({
+										href: "/api",
+										icon: "api",
 										label: "Read API",
 										secondary: true,
 									})),
@@ -114,7 +114,7 @@ const Page = maoka.create(() => () => [
 					})),
 					Philosophy(),
 					InstallCta(),
-					KillerFeatures(),
+					Features(),
 					ApiCta(),
 				]
 			})(),
@@ -270,7 +270,7 @@ const copyText = async text => {
 	textarea.remove()
 }
 
-const KillerFeatures = maoka.html.section(({ value }) => {
+const Features = maoka.html.section(({ value }) => {
 	value.className = "landing-section features-section"
 
 	return () => [

@@ -7,8 +7,10 @@ describe("maoka jabs", () => {
 	test("noRefresh prevents a component from rendering on refresh", () => {
 		let count = 0
 		let refresh
+		let childRefresh
 		let renders = 0
-		const Counter = maoka.html.div(({ use }) => {
+		const Counter = maoka.html.div(({ refresh$, use }) => {
+			childRefresh = refresh$
 			use(maoka.jabs.noRefresh)
 
 			return () => {
@@ -23,6 +25,13 @@ describe("maoka jabs", () => {
 			return () => Counter()
 		})
 		const renderer = render(App)
+
+		expect(renderer.text()).toBe("Count: 0")
+		expect(renders).toBe(1)
+
+		count = 2
+		childRefresh()
+		renderer.flush()
 
 		expect(renderer.text()).toBe("Count: 0")
 		expect(renders).toBe(1)
@@ -100,5 +109,19 @@ describe("maoka jabs", () => {
 
 		expect(() => render(Boundary)).not.toThrow()
 		expect(handledErrors).toEqual([error])
+	})
+
+	test("errorBoundary ignores own errors", () => {
+		const handledErrors = []
+		const Boundary = maoka.html.div(({ use }) => {
+			use(maoka.jabs.errorBoundary(error => handledErrors.push(error)))
+
+			return () => {
+				throw new Error("Boundary failed")
+			}
+		})
+
+		expect(() => render(Boundary)).not.toThrow()
+		expect(handledErrors).toEqual([])
 	})
 })

@@ -1,6 +1,7 @@
 {
 	"name": "maoka",
 	"version": "0.0.0",
+	"license": "Unlicense",
 	"module": "index.js",
 	"types": "maoka.d.ts",
 	"type": "module",

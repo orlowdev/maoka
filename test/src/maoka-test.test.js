@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import maoka from "../../index.js"
-import { render, renderJab } from "../index.js"
+import { render, renderJab, setup } from "../index.js"
 
 describe("maoka test renderer", () => {
 	test("renders and refreshes components in an in-memory tree", () => {
@@ -280,4 +280,51 @@ describe("maoka test renderer", () => {
 		expect(renderer.text()).toBe("Count: 2")
 		expect(renderer.params().props().label).toBe("Count: 2")
 	})
+
+	test("exposes helper query methods and setup alias", () => {
+		const First = maoka.html.div(() => () => "First")
+		const Second = maoka.html.div(() => () => "Second")
+		const App = maoka.create(() => () => [First(), Second(), " tail"])
+		const renderer = render(App)
+		const probe = setup(() => ({ ok: true }))
+
+		expect(renderer.find(value => value.text === "First")?.tag).toBe("div")
+		expect(renderer.findAll(value => value.tag === "div")).toHaveLength(2)
+		expect(renderer.findAllByTag("div")).toHaveLength(2)
+		expect(renderer.findByTag("div")?.text).toBe("First")
+		expect(renderer.toJSON()).toEqual({
+			tag: "root",
+			children: [
+				{ tag: "div", text: "First" },
+				{ tag: "div", text: "Second" },
+				{ tag: "#text", text: " tail" },
+			],
+		})
+		expect(probe.result()).toEqual({ ok: true })
+	})
+
+	test("allows refreshing through the synthetic root parent", () => {
+		let count = 0
+		const Count = maoka.html.div(({ props }) => () => `Count: ${props().count}`)
+		const App = maoka.create(() => () => Count(() => ({ count })))
+		const renderer = render(App)
+
+		expect(renderer.node.parent.props()).toEqual({ key: renderer.root.key })
+		expect(renderer.node.parent.render()).toBe(renderer.root.children)
+
+		count = 1
+		renderer.node.parent.refresh$()
+		renderer.flush()
+
+		expect(renderer.text()).toBe("Count: 1")
+	})
+
+	test("accepts direct component instances", () => {
+		const App = maoka.html.div(() => () => "Direct")
+		const renderer = render(App())
+
+		expect(renderer.node.lastRenderResult).toBe("Direct")
+		expect(renderer.node.hasRenderPhase).toBe(true)
+	})
+
 })

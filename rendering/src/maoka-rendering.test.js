@@ -732,4 +732,83 @@ describe("createRoot", () => {
 			"afterUnmount:child",
 		])
 	})
+
+	test("routes mount-time renderer errors to node error handlers", () => {
+		const errors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {
+				throw new Error("mount refresh failed")
+			},
+		})
+		const node = createNode("node")
+
+		node.lifecycleHandlers.error.push(error => {
+			errors.push(error.message)
+		})
+
+		root.mountNode(node)
+
+		expect(errors).toEqual(["mount refresh failed"])
+	})
+
+	test("routes beforeUnmount cleanup errors to node error handlers", () => {
+		const errors = []
+		const removedNodes = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {},
+			removeNode: node => void removedNodes.push(node.key),
+		})
+		const parent = createNode("parent")
+		const child = createNode("child")
+
+		parent.children.push(child)
+		child.lifecycleHandlers.beforeUnmount.push(() => {
+			throw new Error("cleanup failed")
+		})
+		child.lifecycleHandlers.error.push(error => {
+			errors.push(error.message)
+		})
+
+		root.refreshNode(parent)
+		root.flushRefreshQueue()
+
+		expect(errors).toEqual(["cleanup failed"])
+		expect(removedNodes).toEqual(["child"])
+	})
+
+	test("routes afterMount handler errors to node error handlers", () => {
+		const errors = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			insertNode: () => {},
+			refreshNode: () => {},
+		})
+		const parent = createNode("parent")
+		let child
+		const Child = (root, parent) => {
+			child = createNode("child")
+			child.root = root
+			child.parent = parent
+			child.lifecycleHandlers.afterMount.push(() => {
+				throw new Error("afterMount failed")
+			})
+			child.lifecycleHandlers.error.push(error => {
+				errors.push(error.message)
+			})
+
+			return child
+		}
+
+		parent.mounted = true
+		parent.lastRenderResult = [() => Child]
+
+		root.mountNode(parent)
+
+		expect(errors).toEqual(["afterMount failed"])
+	})
 })

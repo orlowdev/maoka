@@ -1,3 +1,5 @@
+import { getPageByPath, renderOgSvg, renderPageHtml } from "./meta.js"
+
 const port = Number(process.env.PORT ?? 3000)
 const root = new URL("../", import.meta.url)
 
@@ -6,6 +8,26 @@ const server = Bun.serve({
 	async fetch(request) {
 		const url = new URL(request.url)
 		const pathname = getPathname(url.pathname)
+		const docsPage = getPageByPath(pathname)
+
+		if (docsPage) {
+			return new Response(renderPageHtml(docsPage.id, process.env), {
+				headers: {
+					"Content-Type": "text/html; charset=utf-8",
+				},
+			})
+		}
+
+		const ogImage = buildOgImage(pathname)
+
+		if (ogImage) {
+			return new Response(ogImage, {
+				headers: {
+					"Content-Type": "image/svg+xml",
+				},
+			})
+		}
+
 		const pageAsset = await buildPageAsset(pathname)
 
 		if (pageAsset) {
@@ -35,9 +57,24 @@ console.log(`Maoka docs: http://localhost:${server.port}`)
 const docsRoot = new URL("./", import.meta.url)
 
 const getPathname = pathname => {
-	if (pathname === "/") return "/index"
+	if (pathname === "/") return "/"
+	if (pathname !== "/" && pathname.endsWith("/")) return pathname.slice(0, -1)
 
 	return pathname
+}
+
+const buildOgImage = pathname => {
+	const match = pathname.match(/^\/og\/([^/]+)\.svg$/)
+
+	if (!match) return null
+
+	const [, page] = match
+
+	try {
+		return renderOgSvg(page)
+	} catch {
+		return null
+	}
 }
 
 const findFile = async pathname => {
@@ -116,7 +153,10 @@ const getContentType = pathname => {
 	if (pathname.endsWith(".js")) return "text/javascript; charset=utf-8"
 	if (pathname.endsWith(".css")) return "text/css; charset=utf-8"
 	if (pathname.endsWith(".json")) return "application/json; charset=utf-8"
+	if (pathname.endsWith(".webmanifest"))
+		return "application/manifest+json; charset=utf-8"
 	if (pathname.endsWith(".svg")) return "image/svg+xml"
+	if (pathname.endsWith(".png")) return "image/png"
 
 	return "application/octet-stream"
 }

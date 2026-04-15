@@ -1,0 +1,117 @@
+@import "../../src/common.css";
+
+.reference-link,
+.home-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 20px;
+	color: var(--violet);
+	font-size: 0.94rem;
+	font-weight: 900;
+	text-decoration: none;
+	text-underline-offset: 0.32em;
+}
+
+.reference-link::before,
+.home-link::before {
+	width: 18px;
+	height: 2px;
+	background: currentColor;
+	content: "";
+}
+
+.reference-link:hover,
+.home-link:hover {
+	color: var(--hot);
+	text-decoration: underline;
+}
+
+.rendering-callout {
+	max-width: 720px;
+	margin-top: 22px;
+	padding: 18px 22px;
+	border: 1px solid rgba(118, 87, 255, 0.24);
+	border-left: 5px solid var(--violet);
+	background:
+		linear-gradient(90deg, rgba(118, 87, 255, 0.12), rgba(0, 194, 255, 0.1)),
+		rgba(255, 255, 255, 0.58);
+	box-shadow:
+		0 18px 42px rgba(118, 87, 255, 0.12),
+		inset 0 1px 0 rgba(255, 255, 255, 0.72);
+	color: var(--ink);
+	font-size: 1.04rem;
+	font-weight: 800;
+	line-height: 1.7;
+}
+
+.flow-list,
+.checklist,
+.contract-list {
+	display: grid;
+	gap: 14px;
+	margin: 18px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.flow-item,
+.checklist li,
+.contract-list li {
+	padding: 14px 16px 14px 18px;
+	border-left: 4px solid rgba(118, 87, 255, 0.3);
+	background: linear-gradient(90deg, rgba(255, 255, 255, 0.54), transparent);
+}
+
+.flow-item strong,
+.checklist strong,
+.contract-list strong {
+	display: block;
+	color: var(--ink);
+	font-family: var(--font-mono);
+	font-feature-settings: "calt" 1;
+	font-size: 0.92rem;
+	font-variant-ligatures: contextual;
+}
+
+.flow-item span,
+.checklist span,
+.contract-list span {
+	display: block;
+	margin-top: 4px;
+}
+
+.compare-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+	margin-top: 18px;
+}
+
+.flow-list + h3,
+.contract-list + h3,
+section > p + h3,
+section > ul + h3 {
+	margin-top: 28px;
+}
+
+article > section + section > h3:first-child {
+	margin-top: 24px;
+}
+
+.compare-card {
+	padding: 18px 20px;
+	border: 1px solid var(--line);
+	background: var(--panel);
+	box-shadow: 0 16px 32px rgba(21, 18, 42, 0.08);
+}
+
+.compare-card p:first-of-type {
+	margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+	.compare-grid {
+		grid-template-columns: 1fr;
+	}
+}

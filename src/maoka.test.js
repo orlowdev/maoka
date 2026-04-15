@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test"
 
 import maoka from "../index.js"
+import {
+	getComponentKey,
+	getComponentType,
+	getNodeComponentType,
+	isComponent,
+	updateNodeComponent,
+} from "./maoka.impl.js"
 
 const createRoot = () => {
 	const refreshedNodes = []
@@ -46,14 +53,18 @@ const createRoot = () => {
 describe("maoka components", () => {
 	test("create builds a node from the parent value", () => {
 		const { parent, refreshedNodes, root } = createRoot()
+		const afterMount = () => {}
 		const beforeRefresh = () => {}
 		const onError = () => {}
+		const afterUnmount = () => {}
 		let params
 
 		const node = maoka.create(receivedParams => {
 			params = receivedParams
+			receivedParams.lifecycle.afterMount(afterMount)
 			receivedParams.lifecycle.beforeRefresh(beforeRefresh)
 			receivedParams.lifecycle.onError(onError)
+			receivedParams.lifecycle.afterUnmount(afterUnmount)
 
 			return () => ({
 				key: receivedParams.key,
@@ -79,8 +90,10 @@ describe("maoka components", () => {
 			},
 		})
 		expect(node.render()).toEqual(node.lastRenderResult)
+		expect(node.lifecycleHandlers.afterMount).toEqual([afterMount])
 		expect(node.lifecycleHandlers.beforeRefresh).toEqual([beforeRefresh])
 		expect(node.lifecycleHandlers.error).toEqual([onError])
+		expect(node.lifecycleHandlers.afterUnmount).toEqual([afterUnmount])
 
 		params.refresh$()
 		expect(refreshedNodes).toEqual([node])
@@ -163,6 +176,26 @@ describe("maoka components", () => {
 
 		node.refresh$()
 		expect(refreshedNodes).toEqual([node])
+	})
+
+	test("exposes component helper metadata functions", () => {
+		const { parent, root } = createRoot()
+		const Component = maoka.create(({ props }) => () => props().label)
+		const component = Component(() => ({ key: "helper-key", label: "A" }))
+		const node = component(root, parent)
+
+		expect(isComponent(component)).toBe(true)
+		expect(isComponent(() => null)).toBe(false)
+		expect(getComponentKey(component)).toBe("helper-key")
+		expect(getComponentKey(() => null)).toBe(undefined)
+		expect(getComponentType(component)).toBe(node.componentType)
+		expect(getNodeComponentType(node)).toBe(node.componentType)
+
+		updateNodeComponent(
+			node,
+			Component(() => ({ key: "helper-key", label: "B" })),
+		)
+		expect(node.props().label).toBe("B")
 	})
 
 	test("bubbles initial render errors to parent error handlers", () => {

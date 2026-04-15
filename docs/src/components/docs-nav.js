@@ -4,6 +4,7 @@ import "./docs-nav.css"
 const pages = [
 	{ href: "/", label: "Home" },
 	{ href: "/api", label: "API" },
+	{ href: "/best-practices", label: "Best practices" },
 	{ href: "/rendering", label: "Rendering" },
 	{ href: "/component-lifecycle", label: "Component lifecycle" },
 	{ href: "/jabs", label: "Jabs" },
