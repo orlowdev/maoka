@@ -131,6 +131,7 @@ const queueMicrotaskScheduler = flush => {
 const isRefreshContinuation = result => typeof result === "function"
 
 const refreshNode = (node, options, force) => {
+	if (node.disposed === true) return false
 	if (!force && !refreshProps(node)) return false
 
 	const refreshVersion = bumpRefreshVersion(node)
@@ -207,6 +208,8 @@ const runRefreshContinuations = async (
 }
 
 const mountNode = (node, options) => {
+	if (node.failed === true || node.disposed === true) return
+
 	try {
 		applyTemplate(node, options)
 
@@ -271,7 +274,9 @@ const applyComponentTemplates = (node, components, options) => {
 		previousChildren.map(child => [child.key, child]),
 	)
 	const usedChildren = new Set()
-	const nextChildren = components.map((component, index) => {
+	const nextChildren = []
+
+	for (const [index, component] of components.entries()) {
 		const componentKey = getComponentKey(component)
 		const child =
 			componentKey === undefined
@@ -286,16 +291,21 @@ const applyComponentTemplates = (node, components, options) => {
 			usedChildren.add(child)
 			updateNodeComponent(child, component)
 
-			return child
+			nextChildren.push(child)
+
+			continue
 		}
 
 		const nextChild = instantiateComponent(component, node.root, node)
 
+		if (nextChild.failed === true) {
+			continue
+		}
+
 		mountNode(nextChild, options)
 		usedChildren.add(nextChild)
-
-		return nextChild
-	})
+		nextChildren.push(nextChild)
+	}
 
 	for (const child of previousChildren) {
 		if (!usedChildren.has(child)) {
@@ -324,6 +334,11 @@ const removeChildren = (node, options) => {
 }
 
 const destroyNode = (node, options) => {
+	if (node.disposed === true) return
+
+	node.disposed = true
+	refreshVersions.delete(node)
+
 	removeChildren(node, options)
 
 	for (const handler of node.lifecycleHandlers.beforeUnmount) {

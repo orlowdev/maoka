@@ -149,6 +149,23 @@ describe("maokaDom.render", () => {
 		expect(seenTags).toEqual(["button", "circle"])
 	})
 
+	test("ifInDOM returns the callback result", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		let result
+		const Probe = maoka.html.button(({ use }) => {
+			result = use(maokaDom.jabs.ifInDOM(({ value }) => value.tagName))
+
+			return () => "HTML"
+		})
+
+		render(container, Probe())
+
+		expect(result).toBe("button")
+	})
+
 	test("renders component templates into a DOM container", () => {
 		const container = createContainer()
 		const Counter = maoka.create(() => () => [

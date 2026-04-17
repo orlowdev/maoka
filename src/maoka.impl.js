@@ -200,6 +200,8 @@ const createBase = (
 		},
 		mounted: false,
 		componentType: type,
+		disposed: false,
+		failed: false,
 		updateProps: nextProps => {
 			propsSource = nextProps
 		},
@@ -242,9 +244,13 @@ const createBase = (
 		}
 	} catch (error) {
 		handleNodeError(node, error)
+		node.failed = true
+		node.disposed = true
 	}
 
-	parent.children.push(node)
+	if (!node.failed) {
+		parent.children.push(node)
+	}
 
 	return node
 }

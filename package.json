@@ -23,6 +23,7 @@
 			"import": "./test/index.js"
 		},
 		"./rendering": {
+			"types": "./rendering/maoka-rendering.d.ts",
 			"import": "./rendering/index.js"
 		}
 	},

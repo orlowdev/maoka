@@ -135,6 +135,55 @@ describe("maoka test renderer", () => {
 		expect(calls).toEqual(["beforeUnmount:child"])
 	})
 
+	test("ignores stale child refreshes after unmount and cancels pending async continuations", async () => {
+		let resolveRefresh
+		const pendingRefresh = new Promise(resolve => {
+			resolveRefresh = resolve
+		})
+		const calls = []
+		let childRefresh
+		let visible = true
+		let refresh
+		const Child = maoka.html.div(({ lifecycle, refresh$ }) => {
+			childRefresh = refresh$
+			lifecycle.beforeRefresh(() => async () => {
+				await pendingRefresh
+				calls.push("continuation")
+
+				return true
+			})
+
+			return () => {
+				calls.push("render")
+
+				return "Child"
+			}
+		})
+		const App = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () => (visible ? Child(() => ({ key: "child" })) : null)
+		})
+		const renderer = render(App())
+
+		childRefresh()
+		renderer.flush()
+
+		visible = false
+		refresh()
+		renderer.flush()
+
+		childRefresh()
+		renderer.flush()
+
+		resolveRefresh()
+		await pendingRefresh
+		await Promise.resolve()
+
+		expect(renderer.toJSON()).toEqual({ tag: "root" })
+		expect(calls).toEqual(["render", "render", "continuation"])
+	})
+
 	test("does not rerun beforeCreate handlers when components are reused", () => {
 		const calls = []
 		let count = 0

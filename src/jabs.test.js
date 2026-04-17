@@ -111,6 +111,30 @@ describe("maoka jabs", () => {
 		expect(handledErrors).toEqual([error])
 	})
 
+	test("errorBoundary does not mount descendants that fail during initial render", () => {
+		const handledErrors = []
+		const mountCalls = []
+		const BrokenChild = maoka.html.div(({ lifecycle }) => {
+			lifecycle.afterMount(() => {
+				mountCalls.push("afterMount")
+			})
+
+			return () => {
+				throw new Error("Child failed")
+			}
+		})
+		const Boundary = maoka.create(({ use }) => {
+			use(maoka.jabs.errorBoundary(error => handledErrors.push(error.message)))
+
+			return () => BrokenChild()
+		})
+		const renderer = render(Boundary())
+
+		expect(handledErrors).toEqual(["Child failed"])
+		expect(mountCalls).toEqual([])
+		expect(renderer.toJSON()).toEqual({ tag: "root" })
+	})
+
 	test("errorBoundary ignores own errors", () => {
 		const handledErrors = []
 		const Boundary = maoka.html.div(({ use }) => {
