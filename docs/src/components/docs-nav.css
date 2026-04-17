@@ -38,15 +38,36 @@ nav {
 	border-top: 1px solid var(--line);
 }
 
-.sections-nav::before {
-	margin-bottom: 8px;
+.sections-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
 	color: var(--hot);
-	content: "On this page";
 	font-family: var(--font-sans);
 	font-size: 0.72rem;
 	font-weight: 1000;
 	letter-spacing: 0.18em;
+	text-align: left;
 	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.sections-toggle::after {
+	content: "−";
+	font-size: 1rem;
+	line-height: 1;
+}
+
+.sections-nav.is-collapsed .sections-toggle::after {
+	content: "+";
+}
+
+.sections-nav nav {
+	margin-top: 8px;
 }
 
 nav a {
@@ -76,11 +97,23 @@ nav a:hover {
 	aside {
 		position: static;
 		margin-bottom: 34px;
+		padding-left: 0;
+		border-left: 0;
 	}
 
-	nav {
+	aside > nav {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 12px 18px;
+	}
+
+	.sections-nav {
+		margin-top: 20px;
+		padding: 14px 0 0;
+	}
+
+	.sections-nav nav {
+		display: grid;
+		gap: 8px;
 	}
 }

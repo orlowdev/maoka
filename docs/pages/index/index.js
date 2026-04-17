@@ -3,6 +3,11 @@ import maoka from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeDemo } from "../../src/components/code-demo.js"
 import { DocsNav } from "../../src/components/docs-nav.js"
+import { NotebookSheet } from "../../src/components/notebook-sheet.js"
+import { RainbowCard } from "../../src/components/rainbow-card.js"
+import { SiteFooter } from "../../src/components/site-footer.js"
+import { ThemeToggle } from "../../src/components/theme-toggle.js"
+import { Discounter } from "../../src/examples/discounter.js"
 import { Konnichiwa } from "../../src/examples/konnichiwa.js"
 
 const helloExample = `import maoka from "maoka"
@@ -22,6 +27,97 @@ const Konnichiwa = maoka.html.div<{ name: string }>(({ props }) => {
 })
 
 render(document.body, Konnichiwa(() => ({ name: "真岡" })))`
+
+const discounterExample = `import maoka from "maoka"
+import { render } from "maoka/dom"
+
+const createDigits = (count, place) => {
+	const nextPlace = place * 10
+
+	return [
+		...(Math.abs(count) >= nextPlace
+			? createDigits(count, nextPlace)
+			: []),
+		DiscounterDigit(() => ({
+			key: place,
+			digit: Math.floor(Math.abs(count) / place) % 10,
+		})),
+	]
+}
+
+const DiscounterDigit = maoka.html.div(({ props }) => {
+	return () => props().digit
+})
+
+const DiscounterButton = maoka.html.button(({ props, value }) => {
+	value.type = "button"
+	value.onclick = () => props().decrement()
+
+	return () => "−"
+})
+
+const Discounter = maoka.create(({ refresh$ }) => {
+	let count = 0
+
+	const decrement = () => {
+		count--
+		refresh$()
+	}
+
+	return () => [
+		DiscounterButton(() => ({ key: "decrement", decrement })),
+		...createDigits(count, 1),
+	]
+})
+
+render(document.body, Discounter())`
+
+const discounterExampleTs = `import maoka from "maoka"
+import { render } from "maoka/dom"
+import { type Maoka } from "maoka"
+
+const createDigits = (count: number, place: number): Maoka.Component[] => {
+	const nextPlace = place * 10
+
+	return [
+		...(Math.abs(count) >= nextPlace
+			? createDigits(count, nextPlace)
+			: []),
+		DiscounterDigit(() => ({
+			key: place,
+			digit: Math.floor(Math.abs(count) / place) % 10,
+		})),
+	]
+}
+
+const DiscounterDigit = maoka.html.div<{ digit: number }>(({ props }) => {
+	return () => props().digit
+})
+
+const DiscounterButton = maoka.html.button<{ decrement: () => void }>(
+	({ props, value }) => {
+		value.type = "button"
+		value.onclick = () => props().decrement()
+
+		return () => "−"
+	},
+)
+
+const Discounter = maoka.create(({ refresh$ }) => {
+	let count = 0
+
+	const decrement = () => {
+		count--
+		refresh$()
+	}
+
+	return () => [
+		DiscounterButton(() => ({ key: "decrement", decrement })),
+		...createDigits(count, 1),
+	]
+})
+
+render(document.body, Discounter())`
 
 const runtimeFeatures = [
 	{
@@ -80,6 +176,7 @@ const Page = maoka.create(() => () => [
 						value.className = "demo-header"
 
 						return () => [
+							ThemeToggle(),
 							maoka.html.p(({ value }) => {
 								value.className = "eyebrow"
 
@@ -112,10 +209,12 @@ const Page = maoka.create(() => () => [
 						ts: helloExampleTs,
 						preview: [Konnichiwa(() => ({ name: "真岡" }))],
 					})),
+					ExampleSection(),
 					Philosophy(),
 					InstallCta(),
 					Features(),
 					ApiCta(),
+					SiteFooter(),
 				]
 			})(),
 		]
@@ -158,6 +257,29 @@ const Philosophy = maoka.html.section(({ value }) => {
 				})),
 			]
 		})(),
+	]
+})
+
+const ExampleSection = maoka.html.section(({ value }) => {
+	value.className = "landing-section example-section"
+
+	return () => [
+		maoka.html.p(({ value }) => {
+			value.className = "eyebrow"
+
+			return () => "Maoka by Example"
+		})(),
+		maoka.html.h2(() => () => "The Infamous Counter Example"),
+		maoka.html.p(({ value }) => {
+			value.className = "lede example-lede"
+
+			return () => "But it actually discounts."
+		})(),
+		CodeDemo(() => ({
+			js: discounterExample,
+			ts: discounterExampleTs,
+			preview: [Discounter()],
+		})),
 	]
 })
 
@@ -274,10 +396,10 @@ const Features = maoka.html.section(({ value }) => {
 	value.className = "landing-section features-section"
 
 	return () => [
-		maoka.html.div(({ value }) => {
-			value.className = "feature-stage"
-
-			return () => [
+		NotebookSheet(() => ({
+			variant: "note",
+			className: "feature-stage",
+			children: [
 				maoka.html.p(({ value }) => {
 					value.className = "eyebrow feature-eyebrow"
 
@@ -293,8 +415,8 @@ const Features = maoka.html.section(({ value }) => {
 
 					return () => runtimeFeatures.map(feature => Feature(() => feature))
 				})(),
-			]
-		})(),
+			],
+		})),
 	]
 })
 
@@ -320,24 +442,22 @@ const ApiCta = maoka.html.section(({ value }) => {
 	]
 })
 
-const Feature = maoka.html.article(({ props, value }) => {
-	return () => {
-		value.className = ["feature-card", props().slot, props().tilt]
-			.filter(Boolean)
-			.join(" ")
+const Feature = maoka.create(({ props }) => {
+	return () =>
+		RainbowCard(() => ({
+			className: ["feature-card", props().slot, props().tilt].filter(Boolean).join(" "),
+			children: [
+				maoka.html.div(({ value }) => {
+					value.className = "feature-card-title"
 
-		return [
-			maoka.html.div(({ value }) => {
-				value.className = "feature-card-title"
-
-				return () => props().title
-			})(),
-			FeatureBody(() => ({
-				body: props().body,
-				highlight: props().highlight,
-			})),
-		]
-	}
+					return () => props().title
+				})(),
+				FeatureBody(() => ({
+					body: props().body,
+					highlight: props().highlight,
+				})),
+			],
+		}))
 })
 
 const FeatureBody = maoka.html.p(({ props }) => {

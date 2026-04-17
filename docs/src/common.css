@@ -3,6 +3,7 @@
 :root {
 	color: #15122a;
 	background: #f7f5ff;
+	color-scheme: light;
 	font-family: var(--font-editorial);
 	--font-sans: "Inter", "SF Pro", system-ui;
 	--font-editorial: "Literata", "Georgia", serif;
@@ -16,6 +17,48 @@
 	--sun: #ffe45c;
 	--violet: #7657ff;
 	--night: #15122a;
+	--page-bg:
+		radial-gradient(circle at 18% 10%, rgba(255, 61, 139, 0.28), transparent 20rem),
+		radial-gradient(circle at 86% 8%, rgba(0, 194, 255, 0.26), transparent 22rem),
+		radial-gradient(circle at 70% 84%, rgba(255, 228, 92, 0.22), transparent 19rem),
+		radial-gradient(circle, rgba(21, 18, 42, 0.16) 1px, transparent 1.4px),
+		#f7f5ff;
+	--page-bg-size: auto, auto, auto, 24px 24px, auto;
+	--header-rule-shadow: rgba(21, 18, 42, 0.18);
+	--theme-toggle-bg: rgba(255, 255, 255, 0.74);
+	--theme-toggle-border: rgba(41, 35, 87, 0.12);
+	--theme-toggle-text: rgba(21, 18, 42, 0.62);
+	--theme-toggle-active-bg: rgba(255, 255, 255, 0.92);
+	--theme-toggle-active-text: #15122a;
+	--theme-toggle-shadow:
+		0 10px 22px rgba(21, 18, 42, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+html[data-theme="dark"] {
+	color: #f5f1ff;
+	background: #0d0e18;
+	color-scheme: dark;
+	--ink: #f5f1ff;
+	--muted: #c5c0de;
+	--panel: rgba(20, 18, 35, 0.82);
+	--line: rgba(213, 206, 255, 0.14);
+	--night: #f5f1ff;
+	--page-bg:
+		radial-gradient(circle at 18% 10%, rgba(255, 61, 139, 0.2), transparent 20rem),
+		radial-gradient(circle at 86% 8%, rgba(0, 194, 255, 0.16), transparent 22rem),
+		radial-gradient(circle at 70% 84%, rgba(255, 228, 92, 0.14), transparent 19rem),
+		radial-gradient(circle, rgba(215, 210, 255, 0.12) 1px, transparent 1.4px),
+		#0d0e18;
+	--header-rule-shadow: rgba(213, 206, 255, 0.18);
+	--theme-toggle-bg: rgba(15, 14, 28, 0.82);
+	--theme-toggle-border: rgba(213, 206, 255, 0.14);
+	--theme-toggle-text: rgba(245, 241, 255, 0.68);
+	--theme-toggle-active-bg: rgba(245, 241, 255, 0.12);
+	--theme-toggle-active-text: #f5f1ff;
+	--theme-toggle-shadow:
+		0 12px 28px rgba(0, 0, 0, 0.28),
+		inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -29,15 +72,14 @@ html {
 body {
 	margin: 0;
 	min-height: 100vh;
-	background:
-		radial-gradient(circle at 18% 10%, rgba(255, 61, 139, 0.28), transparent 20rem),
-		radial-gradient(circle at 86% 8%, rgba(0, 194, 255, 0.26), transparent 22rem),
-		radial-gradient(circle at 70% 84%, rgba(255, 228, 92, 0.22), transparent 19rem),
-		radial-gradient(circle, rgba(21, 18, 42, 0.16) 1px, transparent 1.4px),
-		#f7f5ff;
-	background-size: auto, auto, auto, 24px 24px, auto;
+	background: var(--page-bg);
+	background-size: var(--page-bg-size);
 	color: var(--ink);
+	transition:
+		background 180ms ease,
+		color 180ms ease;
 }
+
 
 main {
 	width: min(1120px, calc(100% - 32px));
@@ -71,7 +113,7 @@ header {
 
 header::before {
 	position: absolute;
-	right: 0;
+	right: 112px;
 	top: 4px;
 	width: 88px;
 	height: 10px;
@@ -88,8 +130,57 @@ header::after {
 	height: 2px;
 	background:
 		linear-gradient(90deg, var(--hot), var(--aqua) 34%, transparent 34%),
-		linear-gradient(90deg, transparent 0 42%, rgba(21, 18, 42, 0.18) 42% 100%);
+		linear-gradient(90deg, transparent 0 42%, var(--header-rule-shadow) 42% 100%);
 	content: "";
+}
+
+.theme-toggle {
+	position: absolute;
+	right: 0;
+	top: -6px;
+	z-index: 3;
+	display: inline-flex;
+	gap: 4px;
+	padding: 4px;
+	border: 1px solid var(--theme-toggle-border);
+	border-radius: 999px;
+	background: var(--theme-toggle-bg);
+	box-shadow: var(--theme-toggle-shadow);
+	-webkit-backdrop-filter: blur(16px) saturate(1.2);
+	backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.theme-toggle-button {
+	padding: 7px 10px;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	color: var(--theme-toggle-text);
+	font-family: var(--font-sans);
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition:
+		background 140ms ease,
+		color 140ms ease,
+		transform 140ms ease;
+}
+
+.theme-toggle-button:hover,
+.theme-toggle-button:focus-visible {
+	transform: translateY(-1px);
+}
+
+.theme-toggle-button.is-active {
+	background: var(--theme-toggle-active-bg);
+	color: var(--theme-toggle-active-text);
+}
+
+.theme-toggle-button:focus-visible {
+	outline: 2px solid rgba(118, 87, 255, 0.34);
+	outline-offset: 2px;
 }
 
 .demo-header {
@@ -177,6 +268,68 @@ section {
 	margin: 0;
 }
 
+html[data-theme="dark"] .brand-link,
+html[data-theme="dark"] nav a,
+html[data-theme="dark"] .section-link-depth-3,
+html[data-theme="dark"] .tag-chip,
+html[data-theme="dark"] .practice-links a,
+html[data-theme="dark"] .exports-table code {
+	color: var(--ink);
+}
+
+html[data-theme="dark"] .api-card,
+html[data-theme="dark"] .type-group,
+html[data-theme="dark"] .tag-group,
+html[data-theme="dark"] .install-section,
+html[data-theme="dark"] .counter-preview-button,
+html[data-theme="dark"] .counter-preview-value {
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.08) inset,
+		0 14px 32px rgba(0, 0, 0, 0.22);
+}
+
+
+html[data-theme="dark"] .install-section {
+	border-color: rgba(233, 228, 255, 0.16);
+	background: linear-gradient(90deg, rgba(24, 17, 35, 0.96), rgba(18, 18, 36, 0.94) 68%, rgba(15, 26, 35, 0.94));
+}
+
+html[data-theme="dark"] .install-section h2,
+html[data-theme="dark"] .feature-card-title,
+html[data-theme="dark"] .counter-preview-value,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] strong {
+	color: var(--ink);
+}
+
+html[data-theme="dark"] .counter-preview-button,
+html[data-theme="dark"] .counter-preview-value,
+html[data-theme="dark"] .tag-chip {
+	border-color: rgba(233, 228, 255, 0.12);
+	background: linear-gradient(180deg, rgba(36, 33, 58, 0.92), rgba(22, 21, 37, 0.94));
+	color: var(--ink);
+}
+
+html[data-theme="dark"] .api-callout {
+	background:
+		linear-gradient(135deg, rgba(11, 11, 22, 0.98), rgba(14, 17, 29, 0.96)),
+		repeating-linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0.05) 0 1px,
+			transparent 1px 8px
+		);
+}
+
+html[data-theme="dark"] .exports-table th,
+html[data-theme="dark"] .exports-table code,
+html[data-theme="dark"] .tag-chip {
+	color: var(--ink);
+}
+
+html[data-theme="dark"] .exports-table td {
+	color: var(--muted);
+}
+
 @media (max-width: 860px) {
 	body::after {
 		display: none;
@@ -193,5 +346,10 @@ section {
 
 	header::before {
 		display: none;
+	}
+
+	.theme-toggle {
+		position: static;
+		margin: 0 0 18px;
 	}
 }

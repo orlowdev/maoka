@@ -3,43 +3,69 @@ import maoka, { MAOKA } from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
 import { DocsNav } from "../../src/components/docs-nav.js"
+import { NotebookSheet } from "../../src/components/notebook-sheet.js"
+import { RainbowCard } from "../../src/components/rainbow-card.js"
+import { SiteFooter } from "../../src/components/site-footer.js"
+import { ThemeToggle } from "../../src/components/theme-toggle.js"
 
 const importExample = `import maoka, { MAOKA, type Maoka } from "maoka"`
 
-const createExampleJs = `const Counter = maoka.create(({ props, refresh$ }) => {
+const counterValueJs = `const CounterValue = maoka.html.output(({ props }) => {
+	return () => String(props().count)
+})`
+
+const incrementButtonJs = `const IncrementButton = maoka.html.button(({ props, value }) => {
+	value.type = "button"
+	value.onclick = () => props().increment()
+
+	return () => "Increment"
+})`
+
+const incrementButtonTs = `const IncrementButton = maoka.html.button<{
+	increment: () => void
+}>(({ props, value }) => {
+	value.type = "button"
+	value.onclick = () => props().increment()
+
+	return () => "Increment"
+})`
+
+const createExampleJs = `${counterValueJs}
+
+${incrementButtonJs}
+
+const Counter = maoka.create(({ props, refresh$ }) => {
 	let count = props().initialCount
+	const increment = () => {
+		count++
+		refresh$()
+	}
 
 	return () => [
-		maoka.html.output(() => () => String(count))(),
-		maoka.html.button(({ value }) => {
-			value.type = "button"
-			value.onclick = () => {
-				count++
-				refresh$()
-			}
-
-			return () => "Increment"
-		})(),
+		CounterValue(() => ({ key: "value", count })),
+		IncrementButton(() => ({ key: "increment", increment })),
 	]
 })
 
 Counter(() => ({ initialCount: 0, key: "counter" }))`
 
-const createExampleTs = `const Counter = maoka.create<{ initialCount: number }>(
+const createExampleTs = `const CounterValue = maoka.html.output<{ count: number }>(
+	({ props }) => () => String(props().count),
+)
+
+${incrementButtonTs}
+
+const Counter = maoka.create<{ initialCount: number }>(
 	({ props, refresh$ }) => {
 		let count = props().initialCount
+		const increment = () => {
+			count++
+			refresh$()
+		}
 
 		return () => [
-			maoka.html.output(() => () => String(count))(),
-			maoka.html.button(({ value }) => {
-				value.type = "button"
-				value.onclick = () => {
-					count++
-					refresh$()
-				}
-
-				return () => "Increment"
-			})(),
+			CounterValue(() => ({ key: "value", count })),
+			IncrementButton(() => ({ key: "increment", increment })),
 		]
 	},
 )
@@ -674,6 +700,7 @@ const Page = maoka.create(() => () => [
 					ConstantsSection(),
 					TypesSection(),
 					BehaviorSection(),
+					SiteFooter(),
 				]
 			})(),
 		]
@@ -681,6 +708,7 @@ const Page = maoka.create(() => () => [
 ])
 
 const Hero = maoka.html.header(() => () => [
+	ThemeToggle(),
 	maoka.html.p(({ value }) => {
 		value.className = "eyebrow"
 
@@ -700,10 +728,10 @@ const ScopeSection = maoka.html.section(({ value }) => {
 
 	return () => [
 		maoka.html.h2(() => () => "Scope"),
-		maoka.html.div(({ value }) => {
-			value.className = "scope-note"
-
-			return () => [
+		NotebookSheet(() => ({
+			variant: "note",
+			className: "scope-note",
+			children: [
 				maoka.html.p(
 					() => () =>
 						"This page documents the public API of the package root entrypoint `maoka`. It covers the default export `maoka`, the named export `MAOKA`, the exported `type Maoka`, and the exported `namespace Maoka` declarations.",
@@ -717,8 +745,8 @@ const ScopeSection = maoka.html.section(({ value }) => {
 
 					return () => CodeBlock(() => ({ ts: importExample, noShadow: true }))
 				})(),
-			]
-		})(),
+			],
+		})),
 	]
 })
 
@@ -862,11 +890,17 @@ const BehaviorSection = maoka.html.section(({ value }) => {
 
 	return () => [
 		maoka.html.h2(() => () => "Usage and behavior notes"),
-		maoka.html.ol(({ value }) => {
-			value.className = "behavior-list"
+		maoka.html.div(({ value }) => {
+			value.className = "api-card behavior-card"
 
-			return () =>
-				behaviorNotes.map(note => maoka.html.li(() => () => note)())
+			return () => [
+				maoka.html.ol(({ value }) => {
+					value.className = "behavior-items"
+
+					return () =>
+						behaviorNotes.map(note => maoka.html.li(() => () => note)())
+				})(),
+			]
 		})(),
 	]
 })
@@ -936,18 +970,28 @@ const SubpackageCard = maoka.html.section(({ props, value }) => {
 })
 
 const SignatureBlock = maoka.html.div(({ props, value }) => {
-	value.className = "signature-list"
-
-	return () => [
-		maoka.html.p(() => () => maoka.html.strong(() => () => "Signature")())(),
-		CodeBlock(() => ({ ts: props().signature, noShadow: true })),
-	]
+	return () =>
+		RainbowCard(() => ({
+			className: "signature-list",
+			children: [
+				maoka.html.p(() => () => maoka.html.strong(() => () => "Signature")())(),
+				CodeBlock(() => ({ ts: props().signature, noShadow: true })),
+			],
+		}))
 })
 
-const UsageList = maoka.html.ul(({ props, value }) => {
-	value.className = "behavior-list"
+const UsageList = maoka.html.div(({ props }) => {
+	return () =>
+		RainbowCard(() => ({
+			className: "behavior-list",
+			children: [
+				maoka.html.ul(({ value }) => {
+					value.className = "behavior-items"
 
-	return () => props().items.map(item => maoka.html.li(() => () => item)())
+					return () => props().items.map(item => maoka.html.li(() => () => item)())
+				})(),
+			],
+		}))
 })
 
 const TagList = maoka.html.div(({ props, value }) => {

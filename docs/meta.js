@@ -1,5 +1,7 @@
 const SITE_NAME = "Maoka"
 const DEFAULT_THEME_COLOR = "#091326"
+const DARK_THEME_COLOR = "#0a0b14"
+const DEFAULT_SITE_URL = "https://maokajs.netlify.app"
 const OG_WIDTH = 1200
 const OG_HEIGHT = 630
 
@@ -91,7 +93,10 @@ export const renderPageHtml = (pageId, env = process.env) => {
 	const title = page.title
 	const description = page.description
 	const imageAlt = `${SITE_NAME} docs preview for ${page.ogTitle}`
-	const imagePath = `/og/${page.id}.svg`
+	const imagePath = `/og/${page.id}.png`
+	const siteUrl = resolveSiteUrl(env)
+	const canonicalUrl = new URL(page.path, siteUrl).toString()
+	const imageUrl = new URL(imagePath, siteUrl).toString()
 
 	return `<!doctype html>
 <html lang="en">
@@ -109,6 +114,7 @@ export const renderPageHtml = (pageId, env = process.env) => {
 		<meta name="robots" content="index,follow" />
 		<meta name="theme-color" content="${DEFAULT_THEME_COLOR}" />
 		<meta name="msapplication-TileColor" content="${DEFAULT_THEME_COLOR}" />
+		<link rel="canonical" href="${escapeHtmlAttribute(canonicalUrl)}" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
 		<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
@@ -116,18 +122,23 @@ export const renderPageHtml = (pageId, env = process.env) => {
 		<meta property="og:locale" content="en_US" />
 		<meta property="og:site_name" content="${SITE_NAME}" />
 		<meta property="og:type" content="website" />
+		<meta property="og:url" content="${escapeHtmlAttribute(canonicalUrl)}" />
 		<meta property="og:title" content="${escapeHtmlAttribute(title)}" />
 		<meta property="og:description" content="${escapeHtmlAttribute(description)}" />
-		<meta property="og:image" content="${escapeHtmlAttribute(imagePath)}" />
-		<meta property="og:image:type" content="image/svg+xml" />
+		<meta property="og:image" content="${escapeHtmlAttribute(imageUrl)}" />
+		<meta property="og:image:secure_url" content="${escapeHtmlAttribute(imageUrl)}" />
+		<meta property="og:image:type" content="image/png" />
 		<meta property="og:image:width" content="${OG_WIDTH}" />
 		<meta property="og:image:height" content="${OG_HEIGHT}" />
 		<meta property="og:image:alt" content="${escapeHtmlAttribute(imageAlt)}" />
 		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content="${escapeHtmlAttribute(canonicalUrl)}" />
 		<meta name="twitter:title" content="${escapeHtmlAttribute(title)}" />
 		<meta name="twitter:description" content="${escapeHtmlAttribute(description)}" />
-		<meta name="twitter:image" content="${escapeHtmlAttribute(imagePath)}" />
+		<meta name="twitter:image" content="${escapeHtmlAttribute(imageUrl)}" />
+		<meta name="twitter:image:src" content="${escapeHtmlAttribute(imageUrl)}" />
 		<meta name="twitter:image:alt" content="${escapeHtmlAttribute(imageAlt)}" />
+		<script>${renderThemeInitScript()}</script>
 		<link rel="stylesheet" href="${assetPath}.css" />
 		<script type="module" src="${assetPath}.js" async></script>
 	</head>
@@ -220,6 +231,25 @@ function requirePage(pageId) {
 	}
 
 	return page
+}
+
+function resolveSiteUrl(env) {
+	const siteUrl =
+		env.SITE_URL ?? env.URL ?? env.DEPLOY_PRIME_URL ?? env.DEPLOY_URL ?? DEFAULT_SITE_URL
+
+	return normalizeSiteUrl(siteUrl)
+}
+
+function normalizeSiteUrl(siteUrl) {
+	const normalized = String(siteUrl).trim()
+
+	if (!normalized) return DEFAULT_SITE_URL
+
+	return normalized.endsWith("/") ? normalized : `${normalized}/`
+}
+
+function renderThemeInitScript() {
+	return `(function(){var storageKey="maoka-theme-preference";var root=document.documentElement;var themeMeta=document.querySelector('meta[name="theme-color"]');var getSystemTheme=function(){return globalThis.matchMedia&&globalThis.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"};var applyTheme=function(preference){var resolved=preference==="system"?getSystemTheme():preference;root.dataset.themePreference=preference;root.dataset.theme=resolved;if(themeMeta)themeMeta.setAttribute("content",resolved==="dark"?"${DARK_THEME_COLOR}":"${DEFAULT_THEME_COLOR}")};try{var stored=globalThis.localStorage&&globalThis.localStorage.getItem(storageKey);applyTheme(stored==="light"||stored==="dark"||stored==="system"?stored:"system")}catch(_error){applyTheme("system")}})();`
 }
 
 function escapeHtml(value) {

@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import { cp, mkdir, rm, writeFile } from "node:fs/promises"
 
 import { pageIds, renderOgSvg, renderPageHtml } from "./meta.js"
 
@@ -73,6 +73,14 @@ async function copyStaticAssets() {
 		if (!(await file.exists())) continue
 
 		await writeFile(new URL(filename, outDir), await file.bytes())
+	}
+
+	const ogDir = new URL("og/", docsDir)
+	const outOgDir = new URL("og/", outDir)
+	const ogIndex = Bun.file(new URL("index.png", ogDir))
+
+	if (await ogIndex.exists()) {
+		await cp(ogDir, outOgDir, { recursive: true })
 	}
 }
 

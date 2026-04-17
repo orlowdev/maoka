@@ -3,6 +3,9 @@ import maoka from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
 import { DocsNav } from "../../src/components/docs-nav.js"
+import { NotebookSheet } from "../../src/components/notebook-sheet.js"
+import { SiteFooter } from "../../src/components/site-footer.js"
+import { ThemeToggle } from "../../src/components/theme-toggle.js"
 
 const markRefreshGoodExample = `const useRemoteProfile$ = ({ lifecycle, props, refresh$ }) => {
 	let loadedId = null
@@ -63,12 +66,10 @@ const Dashboard = maoka.create(({ props }) => {
 	return () => {
 		const { message, tone } = props()
 
-		return (
-		StatusLine(() => ({
+		return StatusLine(() => ({
 			message,
 			tone,
 		}))
-		)
 	}
 })`
 
@@ -109,23 +110,24 @@ const asyncBadExample = `const Profile = maoka.html.article(({ props, refresh$, 
 	value.onclick = async () => {
 		const { id } = props()
 
-		profile = await fetch(\`/api/profiles/\${id}\`).then(response =>
-			response.json(),
-		)
+		profile = await fetch(\`/api/profiles/\${id}\`)
+			.then(response => response.json())
+
 		refresh$()
 	}
 
-	return () => profile?.name ?? "Load profile"
+	return () => profile?.name ?? "Loading profile..."
 })`
 
 const responsibleTamingExample = `const useWindowWidth = ({ lifecycle, refresh$ }) => {
 	let width = window.innerWidth
-	const onResize = () => {
-		width = window.innerWidth
-		refresh$()
-	}
 
 	lifecycle.afterMount(() => {
+		const onResize = () => {
+			width = window.innerWidth
+			refresh$()
+		}
+
 		window.addEventListener("resize", onResize)
 
 		return () => {
@@ -214,9 +216,13 @@ const ResultCount = maoka.html.output(({ props }) => {
 })
 
 const orderedCreateExample = `const SearchPanel = maoka.html.section(({ lifecycle, props, refresh$, use }) => {
+	// Define state variables
+
 	let query = ""
 	let results = []
 	let isLoading = false
+
+	// Define component behavior
 
 	const updateQuery = nextQuery => {
 		query = nextQuery
@@ -225,17 +231,25 @@ const orderedCreateExample = `const SearchPanel = maoka.html.section(({ lifecycl
 
 	const shouldLoad = () => query.length >= props().minLength
 
+	// Extract values provided by jabs
+
 	const getResultCount = use(({ props }) => () => props().resultCountLabel(results.length))
+
+	// Use self-contained jabs
 
 	use(maoka.jabs.errorBoundary(error => {
 		console.error("Search panel failed", error)
 	}))
+
+	// Define lifecycle
 
 	lifecycle.beforeRefresh(() => {
 		if (!shouldLoad()) return true
 
 		return undefined
 	})
+
+	// Optionally return render phase
 
 	return () => [query, ResultCount(() => ({ label: getResultCount() }))]
 })`
@@ -328,7 +342,10 @@ const sections = [
 			{ tone: "good", title: "Good", code: asyncGoodExample },
 		],
 		links: [
-			{ href: "/component-lifecycle#patterns", label: "Component lifecycle: Patterns" },
+			{
+				href: "/component-lifecycle#patterns",
+				label: "Component lifecycle: Patterns",
+			},
 		],
 	},
 	{
@@ -338,10 +355,18 @@ const sections = [
 			"A jab should follow responsible taming: every side effect it introduces must be handled in the proper lifecycle locations of the component it tames.",
 			"Setup belongs with setup, teardown belongs with teardown, and both should stay visible in the same behavioral unit. A jab should not leave hidden listeners, subscriptions, timers, or observers behind.",
 		],
-		examples: [{ tone: "good", title: "Recommended", code: responsibleTamingExample }],
+		examples: [
+			{ tone: "good", title: "Recommended", code: responsibleTamingExample },
+		],
 		links: [
-			{ href: "/component-lifecycle#after-mount", label: "Component lifecycle: afterMount" },
-			{ href: "/component-lifecycle#before-unmount", label: "Component lifecycle: beforeUnmount" },
+			{
+				href: "/component-lifecycle#after-mount",
+				label: "Component lifecycle: afterMount",
+			},
+			{
+				href: "/component-lifecycle#before-unmount",
+				label: "Component lifecycle: beforeUnmount",
+			},
 		],
 	},
 	{
@@ -375,7 +400,9 @@ const sections = [
 			"A clean create phase is easier to scan. A good default order is: state let bindings first, then derived variables and handlers, then jabs that return values you will use, then void jabs that only register behavior.",
 			"This is a readability convention rather than a hard rule, but it makes large components far easier to maintain.",
 		],
-		examples: [{ tone: "good", title: "Recommended order", code: orderedCreateExample }],
+		examples: [
+			{ tone: "good", title: "Recommended order", code: orderedCreateExample },
+		],
 	},
 	{
 		id: "never-refresh-during-render",
@@ -396,7 +423,9 @@ const sections = [
 			"Use at least one error boundary. At minimum, place one near application entry and log the failure. That is still better than throwing raw subtree errors directly into the user's face.",
 			"A higher-level boundary gives the tree one predictable place to recover, report, or render a fallback when a descendant explodes.",
 		],
-		examples: [{ tone: "good", title: "Recommended", code: errorBoundaryExample }],
+		examples: [
+			{ tone: "good", title: "Recommended", code: errorBoundaryExample },
+		],
 		links: [{ href: "/jabs#error-boundary", label: "Jabs: errorBoundary" }],
 	},
 	{
@@ -420,12 +449,14 @@ const Page = maoka.create(() => () => [
 			maoka.html.article(() => () => [
 				Hero(),
 				...sections.map(section => Section(() => section)),
+				SiteFooter(),
 			]),
 		]
 	})(),
 ])
 
 const Hero = maoka.html.header(() => () => [
+	ThemeToggle(),
 	maoka.html.p(({ value }) => {
 		value.className = "eyebrow"
 
@@ -451,9 +482,7 @@ const Section = maoka.html.section(({ props, value }) => {
 					value.className = "practice-examples"
 
 					return () =>
-						props().examples.map(example =>
-							ExampleCard(() => ({ ...example })),
-						)
+						props().examples.map(example => ExampleCard(() => ({ ...example })))
 				})()
 			: null,
 		props().links?.length
@@ -472,26 +501,29 @@ const Section = maoka.html.section(({ props, value }) => {
 	]
 })
 
-const ExampleCard = maoka.html.div(({ props, value }) => {
-	value.className = `practice-example practice-example-${props().tone}`
+const ExampleCard = maoka.create(({ props }) => {
+	return () =>
+		NotebookSheet(() => ({
+			variant: "note",
+			className: `practice-example practice-example-${props().tone}`,
+			children: [
+				maoka.html.div(({ value }) => {
+					value.className = "practice-example-heading"
 
-	return () => [
-		maoka.html.div(({ value }) => {
-			value.className = "practice-example-heading"
+					return () => [
+						maoka.html.span(({ props, value }) => {
+							value.className = `practice-badge practice-badge-${props().tone}`
 
-			return () => [
-				maoka.html.span(({ props, value }) => {
-					value.className = `practice-badge practice-badge-${props().tone}`
-
-					return () => props().title
-				})(() => ({
-					title: props().title,
-					tone: props().tone,
-				})),
-			]
-		})(),
-		CodeBlock(() => ({ js: props().code })),
-	]
+							return () => props().title
+						})(() => ({
+							title: props().title,
+							tone: props().tone,
+						})),
+					]
+				})(),
+				CodeBlock(() => ({ js: props().code })),
+			],
+		}))
 })
 
 const InlineLink = maoka.html.a(({ props, value }) => {

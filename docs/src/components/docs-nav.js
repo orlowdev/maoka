@@ -13,16 +13,37 @@ const pages = [
 
 export const DocsNav = maoka.html.aside(({ lifecycle, refresh$, value }) => {
 	let sections = []
+	let isSectionsOpen = true
+
+	const syncSectionsState = () => {
+		isSectionsOpen = globalThis.innerWidth > 860
+		refresh$()
+	}
 
 	lifecycle.afterMount(() => {
 		sections = collectSections(value)
+		syncSectionsState()
+		globalThis.addEventListener("resize", syncSectionsState)
 		refresh$()
+
+		return () => {
+			globalThis.removeEventListener("resize", syncSectionsState)
+		}
 	})
 
 	return () => [
 		Logo(),
 		Pages(),
-		sections.length ? SectionsNav(() => ({ sections })) : null,
+		sections.length
+			? SectionsNav(() => ({
+					isOpen: isSectionsOpen,
+					sections,
+					toggle: () => {
+						isSectionsOpen = !isSectionsOpen
+						refresh$()
+					},
+				}))
+			: null,
 	]
 })
 
@@ -41,18 +62,38 @@ const Pages = maoka.html.nav(({ value }) => {
 	return () => pages.map(page => NavLink(() => page))
 })
 
-const SectionsNav = maoka.html.nav(({ value, props }) => {
-	value.setAttribute("aria-label", "Page sections")
-	value.className = "sections-nav"
+const SectionsNav = maoka.html.section(({ props, value }) => {
+	value.className = [
+		"sections-nav",
+		props().isOpen ? "is-open" : "is-collapsed",
+	]
+		.filter(Boolean)
+		.join(" ")
 
-	return () =>
-		props().sections.map(section =>
-			NavLink(() => ({
-				className: `section-link section-link-depth-${section.depth}`,
-				href: `#${section.id}`,
-				label: section.label,
-			})),
-		)
+	return () => [
+		maoka.html.button(({ props, value }) => {
+			value.type = "button"
+			value.className = "sections-toggle"
+			value.setAttribute("aria-expanded", String(props().isOpen))
+			value.onclick = () => props().toggle()
+
+			return () => "On this page"
+		})(() => props()),
+		props().isOpen
+			? maoka.html.nav(({ value, props }) => {
+					value.setAttribute("aria-label", "Page sections")
+
+					return () =>
+						props().sections.map(section =>
+							NavLink(() => ({
+								className: `section-link section-link-depth-${section.depth}`,
+								href: `#${section.id}`,
+								label: section.label,
+							})),
+						)
+				})(() => props())
+			: null,
+	]
 })
 
 const NavLink = maoka.html.a(({ props, value }) => {

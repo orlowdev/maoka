@@ -1,0 +1,43 @@
+.rainbow-card {
+	position: relative;
+	overflow: hidden;
+	border: 1px solid rgba(83, 123, 255, 0.26);
+	border-radius: 0;
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
+		linear-gradient(
+			120deg,
+			rgba(255, 91, 172, 0.18),
+			rgba(255, 232, 92, 0.14) 34%,
+			rgba(0, 194, 255, 0.18) 72%,
+			rgba(179, 244, 255, 0.12)
+		);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.18) inset,
+		0 0 18px rgba(0, 194, 255, 0.12),
+		0 10px 18px rgba(21, 18, 42, 0.08);
+}
+
+.rainbow-card > * {
+	position: relative;
+	z-index: 1;
+}
+
+html[data-theme="dark"] .rainbow-card {
+	color: var(--ink);
+	border-color: rgba(141, 179, 255, 0.2);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+		0 0 20px rgba(0, 194, 255, 0.06),
+		0 12px 24px rgba(0, 0, 0, 0.24);
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+		linear-gradient(
+			120deg,
+			rgba(255, 91, 172, 0.08),
+			rgba(255, 232, 92, 0.05) 34%,
+			rgba(0, 194, 255, 0.08) 72%,
+			rgba(179, 244, 255, 0.05)
+		),
+		linear-gradient(180deg, rgba(18, 17, 31, 0.96), rgba(12, 12, 22, 0.97));
+}

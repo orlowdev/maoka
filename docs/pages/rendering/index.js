@@ -3,6 +3,8 @@ import maoka from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
 import { DocsNav } from "../../src/components/docs-nav.js"
+import { SiteFooter } from "../../src/components/site-footer.js"
+import { ThemeToggle } from "../../src/components/theme-toggle.js"
 
 const rendererSkeletonExample = `import { createRoot } from "maoka/rendering"
 
@@ -158,12 +160,14 @@ const Page = maoka.create(() => () => [
 				CodeBlock(() => ({ js: adapterComparisonExample })),
 				ChecklistSection(),
 				ReferenceSection(),
+				SiteFooter(),
 			]),
 		]
 	})(),
 ])
 
 const Hero = maoka.html.header(() => () => [
+	ThemeToggle(),
 	maoka.html.p(({ value }) => {
 		value.className = "eyebrow"
 

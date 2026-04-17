@@ -17,19 +17,28 @@
 	margin-top: 26px;
 }
 
-.scope-note,
 .api-card,
 .type-group,
-.tag-group,
-.behavior-list,
-.signature-list {
+.tag-group {
 	width: 100%;
 	max-width: 100%;
-	padding: 18px 20px;
+	padding: 20px 22px 22px;
 	border: 1px solid var(--line);
-	border-radius: 18px;
+	border-radius: 0;
 	background: var(--panel);
 	backdrop-filter: blur(14px);
+}
+
+.api-grid,
+.type-grid,
+.tag-grid {
+	margin-top: 24px;
+}
+
+.scope-note {
+	width: 100%;
+	max-width: 100%;
+	padding: 18px 20px 20px 34px;
 }
 
 .scope-note p:first-child,
@@ -45,27 +54,51 @@
 
 .signature-list,
 .behavior-list {
-	margin: 16px 0 0;
+	margin: 22px 0 0;
 }
 
 .signature-list {
-	padding: 18px 20px 20px;
+	padding: 20px 24px 22px;
+}
+
+.behavior-list {
+	padding: 22px 26px 24px;
 }
 
 .signature-list p {
 	margin: 0 0 12px;
 }
 
-.signature-list code,
-.behavior-list code,
-.api-card code,
-.scope-note code,
+.behavior-card {
+	margin-top: 22px;
+}
+
+.behavior-items {
+	margin: 0;
+	padding-left: 2rem;
+}
+
+.behavior-items li + li {
+	margin-top: 1rem;
+}
+
+.signature-list .behavior-items,
+.behavior-list .behavior-items {
+	padding-right: 0.4rem;
+}
+
+.signature-list > p code,
+.behavior-items code,
+.api-card p code,
+.api-card li code,
+.scope-note p code,
+.scope-note li code,
 .tag-list code {
 	font-family: var(--font-mono);
 	font-size: 0.95em;
 }
 
-.signature-list code,
+.signature-list > p code,
 .exports-table code {
 	overflow-wrap: anywhere;
 	word-break: break-word;

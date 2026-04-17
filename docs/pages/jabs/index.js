@@ -3,6 +3,8 @@ import maoka from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
 import { DocsNav } from "../../src/components/docs-nav.js"
+import { SiteFooter } from "../../src/components/site-footer.js"
+import { ThemeToggle } from "../../src/components/theme-toggle.js"
 
 const noRefreshExample = `const StableBadge = maoka.html.span(({ use }) => {
 	use(maoka.jabs.noRefresh)
@@ -155,12 +157,14 @@ const Page = maoka.create(() => () => [
 						ts: customJabExampleTs,
 					},
 				})),
+				SiteFooter(),
 			]),
 		]
 	})(),
 ])
 
 const Hero = maoka.html.header(() => () => [
+	ThemeToggle(),
 	maoka.html.p(({ value }) => {
 		value.className = "eyebrow"
 
