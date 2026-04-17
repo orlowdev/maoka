@@ -5,6 +5,10 @@ component creation from rendering, keeps components renderer-agnostic, exposes
 lifecycle behavior through small composable hooks called jabs, and ships with
 both DOM and in-memory test renderers.
 
+## Docs
+
+[maokajs.netlify.app](https://maokajs.netlify.app)
+
 ## Fast Start
 
 Install the package:
