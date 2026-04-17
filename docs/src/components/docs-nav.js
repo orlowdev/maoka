@@ -3,12 +3,12 @@ import "./docs-nav.css"
 
 const pages = [
 	{ href: "/", label: "Home" },
+	{ href: "/jabs", label: "Jabs" },
+	{ href: "/component-lifecycle", label: "Component lifecycle" },
 	{ href: "/api", label: "API" },
 	{ href: "/best-practices", label: "Best practices" },
-	{ href: "/rendering", label: "Rendering" },
-	{ href: "/component-lifecycle", label: "Component lifecycle" },
-	{ href: "/jabs", label: "Jabs" },
 	{ href: "/testing", label: "Testing" },
+	{ href: "/rendering", label: "Rendering" },
 ]
 
 export const DocsNav = maoka.html.aside(({ lifecycle, refresh$, value }) => {
