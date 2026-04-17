@@ -1,4 +1,4 @@
-import { Maoka } from "../maoka.d.ts"
+import type { Maoka } from "../maoka.d.ts"
 
 export type MaokaTestValue = {
 	tag: string
@@ -49,7 +49,7 @@ export type MaokaTestJabOptions<$Return> = MaokaTestRenderOptions & {
 export const createValue: (tag: string) => MaokaTestValue
 
 export const render: (
-	component: Maoka.Blueprint | Maoka.Component<MaokaTestValue>,
+	component: Maoka.Component<MaokaTestValue>,
 	options?: MaokaTestRenderOptions,
 ) => MaokaTestRenderer
 

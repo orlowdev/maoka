@@ -1,10 +1,13 @@
 /** @import { Maoka } from "../../maoka.d.ts" */
 
-import { MATH_TAGS, SVG_TAGS } from "../../src/maoka.constants.js"
+import { HTML_TAGS, MATH_TAGS, SVG_TAGS } from "../../src/maoka.constants.js"
 import { createRoot } from "../../rendering/index.js"
+import { isComponent } from "../../src/maoka.impl.js"
 
 const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML"
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+const RENDER_COMPONENT_INSTANCE_ERROR =
+	"render expects a component instance; call the blueprint first"
 
 /**
  * Renders a Maoka component into a DOM container.
@@ -15,6 +18,10 @@ const SVG_NAMESPACE = "http://www.w3.org/2000/svg"
  * @returns {Maoka.Root<Element>}
  */
 export const render = (container, component, options = {}) => {
+	if (!isComponent(component)) {
+		throw new TypeError(RENDER_COMPONENT_INSTANCE_ERROR)
+	}
+
 	const root = createRoot({
 		value: container,
 		createKey: options.createKey,
@@ -88,6 +95,7 @@ const createElement = (document, tag) => {
 
 	if (tag.namespace === "html") return document.createElement(tag.tag)
 
+	if (HTML_TAGS.includes(tag)) return document.createElement(tag)
 	if (SVG_TAGS.includes(tag))
 		return document.createElementNS(SVG_NAMESPACE, tag)
 	if (MATH_TAGS.includes(tag))
@@ -144,32 +152,36 @@ const getFirstConcreteValue = node => {
 	return null
 }
 
-const createRootNode = (root, container) => ({
-	key: root.key,
-	value: container,
-	props: {},
-	props: () => ({ key: root.key }),
-	root,
-	render: () => root.children,
-	lastRenderResult: root.children,
-	parent: null,
-	children: root.children,
-	refresh$: () => root.refreshNode(createRootNode(root, container)),
-	lifecycleHandlers: {
-		afterMount: [],
-		beforeRefresh: [],
-		error: [],
-		beforeUnmount: [],
-		afterUnmount: [],
-	},
-	mounted: true,
-})
+const createRootNode = (root, container) => {
+	/** @type {Maoka.Node<Element, any>} */
+	const node = {
+		key: root.key,
+		value: container,
+		props: {},
+		props: () => ({ key: root.key }),
+		root,
+		render: () => root.children,
+		lastRenderResult: root.children,
+		parent: null,
+		children: root.children,
+		refresh$: () => {
+			const child = root.children[0]
 
-const instantiateComponent = (component, root, parent) => {
-	const initializedComponent =
-		component.length >= 2 ? component : component(undefined)
+			if (child) root.refreshNode(child)
+		},
+		lifecycleHandlers: {
+			afterMount: [],
+			beforeRefresh: [],
+			error: [],
+			beforeUnmount: [],
+			afterUnmount: [],
+		},
+		mounted: true,
+	}
 
-	return initializedComponent(root, parent)
+	return node
 }
+
+const instantiateComponent = (component, root, parent) => component(root, parent)
 
 const isImplicitNode = node => node.value === node.parent?.value

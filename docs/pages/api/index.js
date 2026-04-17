@@ -355,7 +355,7 @@ const subpackages = [
 			"The package is intended for browser rendering. It bridges Maoka nodes to DOM elements, schedules refresh through `requestAnimationFrame` when available, and creates HTML, SVG, and MathML nodes with the correct namespace behavior.",
 		],
 		runtime: [
-			"`render(container, component, options?) => Maoka.Root<Element>` mounts a blueprint or component into a DOM container.",
+			"`render(container, component, options?) => Maoka.Root<Element>` mounts a component instance into a DOM container.",
 			"`default maokaDom` currently exposes `maokaDom.jabs.ifInDOM`, a DOM-only jab helper.",
 		],
 		types: [
@@ -374,7 +374,7 @@ const subpackages = [
 		],
 		runtime: [
 			"`createValue(tag) => MaokaTestValue` creates an in-memory renderer value.",
-			"`render(component, options?) => MaokaTestRenderer` mounts a component and returns helpers such as `flush`, `text`, `find`, `findByTag`, and `toJSON`.",
+			"`render(component, options?) => MaokaTestRenderer` mounts a component instance and returns helpers such as `flush`, `text`, `find`, `findByTag`, and `toJSON`.",
 			"`renderJab(jab, options?) => MaokaTestJabRenderer<$Return>` runs a jab inside a probe component and exposes both `params()` and `result()`.",
 			"`setup` is an alias of `renderJab`.",
 		],

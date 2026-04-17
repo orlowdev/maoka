@@ -17,7 +17,7 @@ describe("maoka test renderer", () => {
 				? maoka.html.button(() => () => "+")(() => ({ key: "inc" }))
 				: null,
 		])
-		const renderer = render(Counter)
+		const renderer = render(Counter())
 
 		expect(renderer.toJSON()).toEqual({
 			tag: "root",
@@ -54,7 +54,7 @@ describe("maoka test renderer", () => {
 			maoka.html.div(() => () => "Hello")(),
 			", Maoka",
 		])
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("Hello, Maoka")
 		expect(renderer.toJSON()).toEqual({
@@ -82,7 +82,7 @@ describe("maoka test renderer", () => {
 
 			return () => [asButton ? Button() : Div()]
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.toJSON()).toEqual({
 			tag: "root",
@@ -123,7 +123,7 @@ describe("maoka test renderer", () => {
 
 			return () => (visible ? Child() : null)
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("Child")
 
@@ -152,7 +152,7 @@ describe("maoka test renderer", () => {
 					calls.push(`before:${params.key}`)
 				})
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("Count: 0")
 		expect(calls).toEqual(["before:count"])
@@ -181,7 +181,7 @@ describe("maoka test renderer", () => {
 
 			return () => items.map(id => Row(() => ({ key: id, id })))
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("ab")
 		expect(calls).toEqual(["afterMount:a", "afterMount:b"])
@@ -203,7 +203,7 @@ describe("maoka test renderer", () => {
 
 			return () => "App"
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("App")
 		expect(calls).toEqual(["afterMount:app"])
@@ -221,7 +221,7 @@ describe("maoka test renderer", () => {
 			Silent(() => ({ key: "silent" })),
 			maoka.html.div(() => () => "B")(),
 		])
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("AB")
 		expect(renderer.toJSON()).toEqual({
@@ -285,7 +285,7 @@ describe("maoka test renderer", () => {
 		const First = maoka.html.div(() => () => "First")
 		const Second = maoka.html.div(() => () => "Second")
 		const App = maoka.create(() => () => [First(), Second(), " tail"])
-		const renderer = render(App)
+		const renderer = render(App())
 		const probe = setup(() => ({ ok: true }))
 
 		expect(renderer.find(value => value.text === "First")?.tag).toBe("div")
@@ -307,7 +307,7 @@ describe("maoka test renderer", () => {
 		let count = 0
 		const Count = maoka.html.div(({ props }) => () => `Count: ${props().count}`)
 		const App = maoka.create(() => () => Count(() => ({ count })))
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.node.parent.props()).toEqual({ key: renderer.root.key })
 		expect(renderer.node.parent.render()).toBe(renderer.root.children)
@@ -325,6 +325,19 @@ describe("maoka test renderer", () => {
 
 		expect(renderer.node.lastRenderResult).toBe("Direct")
 		expect(renderer.node.hasRenderPhase).toBe(true)
+		expect(renderer.text()).toBe("Direct")
+		expect(renderer.toJSON()).toEqual({
+			tag: "root",
+			children: [{ tag: "div", text: "Direct" }],
+		})
+	})
+
+	test("throws when render receives a blueprint", () => {
+		const App = maoka.html.div(() => () => "Direct")
+
+		expect(() => render(App)).toThrow(
+			"render expects a component instance; call the blueprint first",
+		)
 	})
 
 })

@@ -209,6 +209,19 @@ const runRefreshContinuations = async (
 const mountNode = (node, options) => {
 	try {
 		applyTemplate(node, options)
+
+		if (node.parent?.parent === null) {
+			const index = node.parent.children.indexOf(node)
+
+			if (index !== -1 && !isImplicitNode(node)) {
+				options.insertNode(node.parent, node, index)
+			}
+
+			if (node.parent.mounted) mountNodeTree(node)
+
+			return
+		}
+
 		mountImplicitNode(node)
 	} catch (error) {
 		handleNodeError(node, error)

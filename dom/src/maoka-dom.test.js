@@ -143,8 +143,8 @@ describe("maokaDom.render", () => {
 			return () => ""
 		})
 
-		render(createContainer(), HtmlProbe)
-		render(createContainer(), SvgProbe)
+		render(createContainer(), HtmlProbe())
+		render(createContainer(), SvgProbe())
 
 		expect(seenTags).toEqual(["button", "circle"])
 	})
@@ -159,7 +159,7 @@ describe("maokaDom.render", () => {
 			maoka.math.mfrac(() => () => ""),
 		])
 
-		render(container, Counter)
+		render(container, Counter())
 
 		expect(container.children.map(child => child.tagName)).toEqual([
 			"a",
@@ -217,7 +217,7 @@ describe("maokaDom.render", () => {
 			return () => [Count(() => ({ count })), Inc()]
 		})
 
-		render(container, Counter)
+		render(container, Counter())
 
 		const countButton = container.children[0]
 		const incButton = container.children[1]
@@ -256,7 +256,7 @@ describe("maokaDom.render", () => {
 			return () => Count(() => ({ count }))
 		})
 
-		render(container, Counter)
+		render(container, Counter())
 
 		expect(container.children[0].textContent).toBe("Count: 0")
 
@@ -281,7 +281,7 @@ describe("maokaDom.render", () => {
 		let count = 0
 		const Count = maoka.html.output(({ props }) => () => `Count: ${props().count}`)
 		const App = maoka.create(() => () => Count(() => ({ count })))
-		const root = render(container, App)
+		const root = render(container, App())
 
 		expect(root.children[0].parent.props()).toEqual({ key: root.key })
 		expect(root.children[0].parent.render()).toBe(root.children)
@@ -291,15 +291,20 @@ describe("maokaDom.render", () => {
 
 		expect(scheduledFrames).toHaveLength(1)
 		expect(() => scheduledFrames[0]()).not.toThrow()
+		expect(container.children).toHaveLength(1)
+		expect(container.children[0].tagName).toBe("output")
+		expect(container.children[0].textContent).toBe("Count: 1")
+		expect(container.textContent).toBe("")
 	})
 
 	test("creates svg and math elements from plain string tags", () => {
 		const container = createContainer()
 		const SvgCircle = maoka.pure("circle", () => () => "")
 		const MathFraction = maoka.pure("mfrac", () => () => "")
+		const HtmlLink = maoka.pure("a", () => () => "")
 		const App = maoka.create(() => () => [SvgCircle(), MathFraction()])
 
-		render(container, App)
+		render(container, App())
 
 		expect(container.children[0].tagName).toBe("circle")
 		expect(container.children[0].namespaceURI).toBe(
@@ -309,6 +314,12 @@ describe("maokaDom.render", () => {
 		expect(container.children[1].namespaceURI).toBe(
 			"http://www.w3.org/1998/Math/MathML",
 		)
+
+		const linkContainer = createContainer()
+
+		render(linkContainer, HtmlLink())
+		expect(linkContainer.children[0].tagName).toBe("a")
+		expect(linkContainer.children[0].namespaceURI).toBe("html")
 	})
 
 	test("keeps surrounding sibling order when an implicit child refreshes", () => {
@@ -427,7 +438,7 @@ describe("maokaDom.render", () => {
 			]
 		})
 
-		render(container, App)
+		render(container, App())
 
 		expect(container.children.map(child => child.textContent)).toEqual([
 			"Orders",
@@ -479,7 +490,7 @@ describe("maokaDom.render", () => {
 				)
 		})
 
-		render(container, List)
+		render(container, List())
 
 		const [a, b, c] = container.children
 
@@ -584,7 +595,7 @@ describe("maokaDom.render", () => {
 			]
 		})
 
-		render(container, Example)
+		render(container, Example())
 
 		const [a, c] = container.children
 
@@ -615,7 +626,7 @@ describe("maokaDom.render", () => {
 			", Maoka",
 		])
 
-		render(container, App)
+		render(container, App())
 
 		expect(container.childNodes).toHaveLength(2)
 		expect(container.childNodes[0].tagName).toBe("span")
@@ -634,11 +645,31 @@ describe("maokaDom.render", () => {
 			])(),
 		])
 
-		expect(() => render(container, Page)).not.toThrow()
+		expect(() => render(container, Page())).not.toThrow()
 		expect(container.children.map(child => child.tagName)).toEqual(["main"])
 		expect(container.children[0].children.map(child => child.tagName)).toEqual([
 			"header",
 			"section",
 		])
+	})
+
+	test("renders top-level direct component instances into the container", () => {
+		const container = createContainer()
+		const App = maoka.html.div(() => () => "Direct")
+
+		render(container, App())
+
+		expect(container.children).toHaveLength(1)
+		expect(container.children[0].tagName).toBe("div")
+		expect(container.children[0].textContent).toBe("Direct")
+	})
+
+	test("throws when render receives a blueprint", () => {
+		const container = createContainer()
+		const App = maoka.html.div(() => () => "Direct")
+
+		expect(() => render(container, App)).toThrow(
+			"render expects a component instance; call the blueprint first",
+		)
 	})
 })

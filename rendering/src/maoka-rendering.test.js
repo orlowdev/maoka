@@ -79,6 +79,44 @@ describe("createRoot", () => {
 		expect(root.createValue("button")).toEqual({ tag: "button" })
 	})
 
+	test("mounts top-level explicit nodes into the synthetic root parent", () => {
+		const insertedNodes = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {},
+			insertNode: (parent, node, index) => {
+				insertedNodes.push({ parent: parent.key, node: node.key, index })
+			},
+		})
+		const parent = {
+			...createNode(root.key),
+			key: root.key,
+			value: root.value,
+			props: () => ({ key: root.key }),
+			render: () => root.children,
+			lastRenderResult: root.children,
+			parent: null,
+			children: root.children,
+			mounted: true,
+		}
+		const calls = []
+		const App = pure("div", ({ lifecycle }) => {
+			lifecycle.afterMount(() => {
+				calls.push("afterMount")
+			})
+
+			return () => "Direct"
+		})
+		const node = App()(root, parent)
+
+		root.mountNode(node)
+
+		expect(insertedNodes).toEqual([{ parent: root.key, node: node.key, index: 0 }])
+		expect(node.mounted).toBe(true)
+		expect(calls).toEqual(["afterMount"])
+	})
+
 	test("deduplicates queued refreshes before asking the renderer", async () => {
 		const refreshedNodes = []
 		const root = createRoot({
@@ -714,8 +752,8 @@ describe("createRoot", () => {
 
 		expect(child.mounted).toBe(true)
 		expect(calls).toEqual([
-			"insert:child:into:parent",
 			"afterMount:child",
+			"insert:child:into:parent",
 			"insert:child:into:parent",
 		])
 
@@ -724,8 +762,8 @@ describe("createRoot", () => {
 
 		expect(child.mounted).toBe(false)
 		expect(calls).toEqual([
-			"insert:child:into:parent",
 			"afterMount:child",
+			"insert:child:into:parent",
 			"insert:child:into:parent",
 			"afterMount-cleanup:child",
 			"remove:child",

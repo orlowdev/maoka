@@ -9,6 +9,12 @@ import { ThemeToggle } from "../../src/components/theme-toggle.js"
 const rendererSkeletonExample = `import { createRoot } from "maoka/rendering"
 
 export const renderWidget = (value, component, options = {}) => {
+	if (!isComponent(component)) {
+		throw new TypeError(
+			"render expects a component instance; call the blueprint first",
+		)
+	}
+
 	const root = createRoot({
 		value,
 		createKey: options.createKey,
@@ -20,9 +26,7 @@ export const renderWidget = (value, component, options = {}) => {
 		cancelRefresh,
 	})
 	const parent = createRootNode(root, value)
-	const initialized =
-		component.length >= 2 ? component : component(undefined)
-	const node = initialized(root, parent)
+	const node = component(root, parent)
 
 	root.mountNode(node)
 

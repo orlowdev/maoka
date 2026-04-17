@@ -1,4 +1,4 @@
-import { Maoka } from "../maoka.d.ts"
+import type { Maoka } from "../maoka.d.ts"
 
 export namespace MaokaDom {
 	export type IfInDom = <
@@ -7,7 +7,7 @@ export namespace MaokaDom {
 		$Return = void,
 	>(
 		callback: (params: Maoka.Params<$Element, $Props>) => $Return,
-	) => Maoka.Jab<$Return>
+	) => Maoka.Jab<$Element, $Props, $Return>
 }
 
 export type MaokaDomRenderOptions = {
@@ -19,3 +19,11 @@ export const render: (
 	component: Maoka.Component<Element>,
 	options?: MaokaDomRenderOptions,
 ) => Maoka.Root<Element>
+
+declare const maokaDom: {
+	jabs: {
+		ifInDOM: MaokaDom.IfInDom
+	}
+}
+
+export default maokaDom

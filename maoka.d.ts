@@ -7,6 +7,10 @@ export type Maoka = {
 	jabs: Maoka.Jabs
 }
 
+declare const maoka: Maoka
+
+export default maoka
+
 export namespace Maoka {
 	type Key = string | number
 	type Namespace = "html" | "svg" | "math"

@@ -24,7 +24,7 @@ describe("maoka jabs", () => {
 
 			return () => Counter()
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("Count: 0")
 		expect(renders).toBe(1)
@@ -68,7 +68,7 @@ describe("maoka jabs", () => {
 
 			return () => Counter(() => ({ key: "counter", ...props }))
 		})
-		const renderer = render(App)
+		const renderer = render(App())
 
 		expect(renderer.text()).toBe("0:0")
 		expect(renders).toBe(1)
@@ -107,7 +107,7 @@ describe("maoka jabs", () => {
 			return () => BrokenChild()
 		})
 
-		expect(() => render(Boundary)).not.toThrow()
+		expect(() => render(Boundary())).not.toThrow()
 		expect(handledErrors).toEqual([error])
 	})
 
@@ -121,7 +121,7 @@ describe("maoka jabs", () => {
 			}
 		})
 
-		expect(() => render(Boundary)).not.toThrow()
+		expect(() => render(Boundary())).not.toThrow()
 		expect(handledErrors).toEqual([])
 	})
 })

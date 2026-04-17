@@ -31,7 +31,7 @@ test("Counter refreshes without DOM", () => {
 			})(() => ({ key: "inc" })),
 		]
 	})
-	const screen = render(Counter)
+	const screen = render(Counter())
 
 	screen.findByTag("button").onclick()
 	screen.flush()
@@ -73,7 +73,7 @@ test("Counter refreshes without DOM", () => {
 			})(() => ({ key: "inc" })),
 		]
 	})
-	const screen = render(Counter)
+	const screen = render(Counter())
 
 	screen.findByTag("button").onclick()
 	screen.flush()
@@ -178,7 +178,7 @@ const Page = maoka.create(() => () => [
 				Section(() => ({
 					id: "components",
 					title: "Component tests",
-					body: "Use render(component) when you want a lightweight screen object. It gives you refresh(), flush(), text(), toJSON(), find(), findAll(), findByTag(), and findAllByTag().",
+					body: "Use render(componentInstance) when you want a lightweight screen object. It gives you refresh(), flush(), text(), toJSON(), find(), findAll(), findByTag(), and findAllByTag().",
 				})),
 				CodeBlock(() => ({ js: componentExample, ts: componentExampleTs })),
 				Section(() => ({
@@ -233,7 +233,7 @@ const ApiList = maoka.html.section(({ value }) => {
 		maoka.html.ul(() => () => [
 			ApiItem(() => ({
 				title: "render(component, options?)",
-				body: "Renders a Blueprint or InitializedComponent into a TestValue tree.",
+				body: "Renders a component instance into a TestValue tree.",
 			})),
 			ApiItem(() => ({
 				title: "renderJab(jab, options?)",

@@ -2,6 +2,7 @@
 
 import maoka from "../../index.js"
 import { createRoot } from "../../rendering/index.js"
+import { isComponent } from "../../src/maoka.impl.js"
 
 /**
  * @typedef {object} TestValue
@@ -10,6 +11,9 @@ import { createRoot } from "../../rendering/index.js"
  * @property {TestValue | null} parent
  * @property {TestValue[]} children
  */
+
+const RENDER_COMPONENT_INSTANCE_ERROR =
+	"render expects a component instance; call the blueprint first"
 
 /**
  * Creates an in-memory renderer value.
@@ -32,6 +36,10 @@ export const createValue = tag => ({
  * @returns {import("../maoka-test.d.ts").MaokaTestRenderer}
  */
 export const render = (component, options = {}) => {
+	if (!isComponent(component)) {
+		throw new TypeError(RENDER_COMPONENT_INSTANCE_ERROR)
+	}
+
 	const value = options.value ?? createValue("root")
 	const root = createRoot({
 		value,
@@ -145,10 +153,7 @@ const createRootNode = (root, value) => ({
 })
 
 const instantiateComponent = (component, root, parent) => {
-	const initializedComponent =
-		component.length >= 2 ? component : component(undefined)
-
-	return initializedComponent(root, parent)
+	return component(root, parent)
 }
 
 const removeValue = value => {

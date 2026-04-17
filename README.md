@@ -44,8 +44,8 @@ What is happening here:
 - The definition function is the create phase. It runs once for the node.
 - The returned function is the render phase. It produces output from current
   props.
-- `render(...)` comes from `maoka/dom` and mounts the component into a real DOM
-  container.
+- `render(...)` comes from `maoka/dom` and mounts a component instance into a
+  real DOM container.
 
 ## Why Maoka
 
@@ -128,7 +128,7 @@ Use this module when you are defining components and jabs.
 
 ### `maoka/dom`
 
-The DOM adapter exports `render(container, component, options?)` and
+The DOM adapter exports `render(container, componentInstance, options?)` and
 DOM-specific helpers. Use it when you want to mount Maoka components into a
 browser DOM tree.
 
@@ -143,7 +143,7 @@ The repo test suite verifies DOM behaviors including:
 
 The test adapter exports:
 
-- `render(...)` for rendering a component into an in-memory tree
+- `render(...)` for rendering a component instance into an in-memory tree
 - `renderJab(...)` for probing a jab with real Maoka params
 - helpers such as `flush()`, `text()`, `toJSON()`, and `findByTag(...)`
 
