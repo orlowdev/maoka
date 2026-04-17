@@ -542,6 +542,13 @@ html[data-theme="dark"] .install-command:focus-visible {
 	box-shadow: 0 8px 0 rgba(130, 255, 84, 0.34);
 }
 
+html[data-theme="dark"] .install-toast {
+	border-color: rgba(233, 228, 255, 0.2);
+	background: rgba(22, 21, 37, 0.96);
+	box-shadow: 4px 4px 0 rgba(109, 40, 217, 0.18);
+	color: #f5f1ff;
+}
+
 .api-callout h2 {
 	color: #f5fbff;
 	margin-top: 0;

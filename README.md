@@ -1,5 +1,9 @@
 # Maoka
 
+![GitHub top language](https://img.shields.io/github/languages/top/orlowdev/maoka)
+![NPM License](https://img.shields.io/npm/l/maoka)
+![NPM Version](https://img.shields.io/npm/v/maoka)
+
 Maoka is a UI library for on-demand rendering of user interfaces. It separates
 component creation from rendering, keeps components renderer-agnostic, exposes
 lifecycle behavior through small composable hooks called jabs, and ships with
