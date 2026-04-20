@@ -348,7 +348,9 @@ const normalizeBlueprintArgs = (propsOrMetadata, metadata) => {
 
 	return {
 		props: undefined,
-		metadata: normalizeMetadata(propsOrMetadata),
+		metadata: normalizeMetadata(
+			propsOrMetadata === undefined ? metadata : propsOrMetadata,
+		),
 	}
 }
 

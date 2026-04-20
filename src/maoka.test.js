@@ -376,6 +376,17 @@ describe("maoka components", () => {
 		expect(node.lastRenderResult).toBe("standalone")
 	})
 
+	test("no-props blueprints preserve metadata in the explicit second argument", () => {
+		const { root, parent } = createRoot()
+		const Spinner = maoka.create(params => () => params.key)
+		const component = Spinner(undefined, { key: "spinner" })
+		const node = component(root, parent)
+
+		expect(getComponentKey(component)).toBe("spinner")
+		expect(node.key).toBe("spinner")
+		expect(node.lastRenderResult).toBe("spinner")
+	})
+
 	test("fresh props objects do not queue refresh while being read", () => {
 		const { parent, refreshedNodes, root } = createRoot()
 		let propsCalls = 0

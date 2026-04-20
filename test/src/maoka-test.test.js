@@ -437,6 +437,35 @@ describe("maoka test renderer", () => {
 		expect(calls).toEqual(["afterMount:a", "afterMount:b"])
 	})
 
+	test("reuses no-props keyed components when metadata is passed as the second argument", () => {
+		const calls = []
+		let items = ["a", "b"]
+		let refresh
+		const Row = maoka.html.div(({ lifecycle, key }) => {
+			lifecycle.afterMount(() => {
+				calls.push(`afterMount:${key}`)
+			})
+
+			return () => key
+		})
+		const App = maoka.create(params => {
+			refresh = params.refresh$
+
+			return () => items.map(id => Row(undefined, { key: id }))
+		})
+		const renderer = render(App())
+
+		expect(renderer.text()).toBe("ab")
+		expect(calls).toEqual(["afterMount:a", "afterMount:b"])
+
+		items = ["b", "a"]
+		refresh()
+		renderer.flush()
+
+		expect(renderer.text()).toBe("ba")
+		expect(calls).toEqual(["afterMount:a", "afterMount:b"])
+	})
+
 	test("runs afterMount handlers for root create components that share parent values", () => {
 		const calls = []
 		const App = maoka.create(({ lifecycle }) => {
