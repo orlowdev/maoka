@@ -21,19 +21,18 @@ export namespace Maoka {
 	type Namespace = "html" | "svg" | "math"
 	type Tag = string | { namespace: Namespace; tag: string }
 
-	type KeyProps = { key?: Key }
 	type NoProps = void
 	type BaseProps = Record<string, any> | NoProps
+	type EmptyProps = Record<never, never>
+	type ComponentMetadata = {
+		key?: Key
+	}
 	type Props<$Props extends BaseProps = NoProps> = $Props extends NoProps
-		? (() => KeyProps) | NoProps
-		: $Props extends KeyProps
-			? () => $Props
-			: () => $Props & KeyProps
+		? NoProps
+		: () => $Props
 	type DefinitionProps<$Props extends BaseProps> = $Props extends NoProps
-		? () => Required<KeyProps>
-		: $Props extends Required<KeyProps>
-			? () => $Props
-			: () => $Props & Required<KeyProps>
+		? () => EmptyProps
+		: () => $Props
 
 	type Jab<$Type = any, $Props extends BaseProps = NoProps, $Return = void> = (
 		params: Params<$Type, $Props>,
@@ -223,8 +222,11 @@ export namespace Maoka {
 	}
 
 	type Blueprint<$Props extends BaseProps = NoProps> = $Props extends NoProps
-		? (props?: Props<$Props>) => Maoka.Component<any, $Props>
-		: (props: Props<$Props>) => Maoka.Component<any, $Props>
+		? (metadata?: ComponentMetadata) => Maoka.Component<any, $Props>
+		: (
+				props: Props<$Props>,
+				metadata?: ComponentMetadata,
+			) => Maoka.Component<any, $Props>
 
 	type Node<$Type = any, $Props extends BaseProps = NoProps> = {
 		key: Key

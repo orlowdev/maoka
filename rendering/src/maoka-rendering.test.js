@@ -8,8 +8,8 @@ const createNode = key => ({
 	value: { tag: key },
 	propsData: {},
 	propsChanged: false,
-	syncProps: () => ({ key }),
-	props: () => ({ key }),
+	syncProps: () => ({}),
+	props: () => ({}),
 	root: null,
 	render: () => key,
 	lastRenderResult: key,
@@ -25,6 +25,7 @@ const createNode = key => ({
 	},
 	mounted: false,
 	updateProps: () => {},
+	updateMetadata: () => {},
 })
 
 const createPropsNode = (key, getProps) => {
@@ -44,7 +45,7 @@ const createPropsNode = (key, getProps) => {
 
 		return props
 	}
-	node.props = () => ({ ...node.syncProps(), key })
+	node.props = () => node.syncProps()
 
 	return node
 }
@@ -93,7 +94,7 @@ describe("createRoot", () => {
 			...createNode(root.key),
 			key: root.key,
 			value: root.value,
-			props: () => ({ key: root.key }),
+			props: () => ({}),
 			render: () => root.children,
 			lastRenderResult: root.children,
 			parent: null,
@@ -436,7 +437,7 @@ describe("createRoot", () => {
 		let childCount = 0
 
 		parent.root = root
-		parent.render = () => Child(() => ({ key: "child", count: childCount }))
+		parent.render = () => Child(() => ({ count: childCount }), { key: "child" })
 		parent.lastRenderResult = parent.render()
 		parent.lifecycleHandlers.beforeRefresh.push(() => async () => {
 			await deferred.promise

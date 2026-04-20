@@ -92,7 +92,7 @@ const Counter = maoka.create(({ refresh$ }) => {
 	}
 
 	return () => [
-		Count(() => ({ key: "count", count })),
+		Count(() => ({ count }), { key: "count" }),
 		IncrementButton(() => ({ increment })),
 	]
 })`
@@ -241,7 +241,7 @@ const beforeCreateExample = `const TraceablePanel = maoka.html.section(({ props 
 	return () => props().title
 })
 
-const Panel = TraceablePanel(() => ({ key: "settings", title: "Settings" }))
+const Panel = TraceablePanel(() => ({ title: "Settings" }), { key: "settings" })
 	.beforeCreate(({ key }) => {
 		console.info("creating panel", key)
 	})

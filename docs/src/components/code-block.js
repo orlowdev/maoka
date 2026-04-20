@@ -142,7 +142,7 @@ const Pre = maoka.html.pre(({ props }) => {
 const Code = maoka.html.code(({ props }) => {
 	return () =>
 		splitLines(props().code).map((line, index) =>
-			CodeLine(() => ({ key: index, line })),
+			CodeLine(() => ({ line }), { key: index }),
 		)
 })
 
@@ -153,7 +153,7 @@ const CodeLine = maoka.html.span(({ props, use }) => {
 		const line = props().line
 
 		return tokenize(line.code).map((token, index) =>
-			Token(() => ({ key: index, token })),
+			Token(() => ({ token }), { key: index }),
 		)
 	}
 })

@@ -588,7 +588,7 @@ describe("maokaDom.render", () => {
 		const App = maoka.create(() => () => Count(() => ({ count })))
 		const root = render(container, App())
 
-		expect(root.children[0].parent.props()).toEqual({ key: root.key })
+		expect(root.children[0].parent.props()).toEqual({})
 		expect(root.children[0].parent.render()).toBe(root.children)
 
 		count = 1
@@ -791,7 +791,10 @@ describe("maokaDom.render", () => {
 
 			return () =>
 				items.map(item =>
-					Row(() => ({ key: item.id, id: item.id, label: item.label })),
+					Row(
+						() => ({ id: item.id, label: item.label }),
+						{ key: item.id },
+					),
 				)
 		})
 
@@ -894,9 +897,9 @@ describe("maokaDom.render", () => {
 			lifecycle.beforeRefresh(() => true)
 
 			return () => [
-				Label(() => ({ key: "a", label: "A" })),
-				visible ? Label(() => ({ key: "b", label: "B" })) : undefined,
-				Label(() => ({ key: "c", label: "C" })),
+				Label(() => ({ label: "A" }), { key: "a" }),
+				visible ? Label(() => ({ label: "B" }), { key: "b" }) : undefined,
+				Label(() => ({ label: "C" }), { key: "c" }),
 			]
 		})
 

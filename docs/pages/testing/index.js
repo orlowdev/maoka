@@ -34,8 +34,8 @@ test("Counter refreshes without DOM", () => {
 		}
 
 		return () => [
-			Count(() => ({ key: "count", count })),
-			IncrementButton(() => ({ key: "inc", onClick: inc })),
+			Count(() => ({ count }), { key: "count" }),
+			IncrementButton(() => ({ onClick: inc }), { key: "inc" }),
 		]
 	})
 	const screen = render(Counter())
@@ -81,8 +81,8 @@ test("Counter refreshes without DOM", () => {
 		}
 
 		return () => [
-			Count(() => ({ key: "count", count })),
-			IncrementButton(() => ({ key: "inc", onClick: inc })),
+			Count(() => ({ count }), { key: "count" }),
+			IncrementButton(() => ({ onClick: inc }), { key: "inc" }),
 		]
 	})
 	const screen = render(Counter())
@@ -226,7 +226,7 @@ const Section = maoka.html.section(({ props, use }) => {
 })
 
 const ApiItemsList = maoka.html.ul(({ props }) => () =>
-	props().items.map(item => ApiItem(() => ({ key: item.title, ...item }))),
+	props().items.map(item => ApiItem(() => item, { key: item.title })),
 )
 
 const ApiList = maoka.html.section(({ use }) => {

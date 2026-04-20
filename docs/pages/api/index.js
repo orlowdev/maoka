@@ -46,12 +46,12 @@ const Counter = maoka.create(({ props, refresh$ }) => {
 	}
 
 	return () => [
-		CounterValue(() => ({ key: "value", count })),
-		IncrementButton(() => ({ key: "increment", increment })),
+		CounterValue(() => ({ count }), { key: "value" }),
+		IncrementButton(() => ({ increment }), { key: "increment" }),
 	]
 })
 
-Counter(() => ({ initialCount: 0, key: "counter" }))`
+Counter(() => ({ initialCount: 0 }), { key: "counter" })`
 
 const createExampleTs = `const CounterValue = maoka.html.output<{ count: number }>(
 	({ props }) => () => String(props().count),
@@ -68,13 +68,13 @@ const Counter = maoka.create<{ initialCount: number }>(
 		}
 
 		return () => [
-			CounterValue(() => ({ key: "value", count })),
-			IncrementButton(() => ({ key: "increment", increment })),
+			CounterValue(() => ({ count }), { key: "value" }),
+			IncrementButton(() => ({ increment }), { key: "increment" }),
 		]
 	},
 )
 
-Counter(() => ({ initialCount: 0, key: "counter" }))`
+Counter(() => ({ initialCount: 0 }), { key: "counter" })`
 
 const pureExampleJs = `const Badge = maoka.pure("span", ({ props, use }) => {
 	use(maoka.jabs.classes.set("badge"))
@@ -201,6 +201,20 @@ const stringRenderer: MaokaString = maokaString
 void html
 void stringRenderer`
 
+const keyExampleJs = `const Row = maoka.html.li(({ props }) => () => props().label)
+const Spinner = maoka.html.output(() => () => "Loading")
+
+items.map(item => Row(() => ({ label: item.label }), { key: item.id }))
+Spinner({ key: "orders-spinner" })`
+
+const keyExampleTs = `const Row = maoka.html.li<{ label: string }>(
+	({ props }) => () => props().label,
+)
+const Spinner = maoka.html.output(() => () => "Loading")
+
+items.map(item => Row(() => ({ label: item.label }), { key: item.id }))
+Spinner({ key: "orders-spinner" })`
+
 const exportsRows = [
 	{
 		exportName: "default",
@@ -238,12 +252,12 @@ const defaultMembers = [
 	definition: Maoka.ComponentDefinition<$Props>,
 ): Maoka.Blueprint<$Props>`,
 		body: [
-			"Creates a component blueprint with no predefined renderer value. The returned blueprint is later called with a props provider and then instantiated by a renderer.",
-			"The definition runs during the create phase and may optionally return a render function. Keys are supplied through the props provider and participate in child identity during reconciliation.",
+			"Creates a component blueprint with no predefined renderer value. The returned blueprint is later called with a props provider plus optional metadata and then instantiated by a renderer.",
+			"The definition runs during the create phase and may optionally return a render function. Keys are supplied through blueprint metadata and participate in child identity during reconciliation.",
 		],
 		usage: [
 			"Use for structural or controller components that coordinate child output rather than binding themselves to a specific tag.",
-			"Call the resulting blueprint as `Component(() => ({ ...props, key }))` to create a component instance.",
+			"Call the resulting blueprint as `Component(() => props, { key })` when props are required, or `Component({ key })` when the component has no props.",
 		],
 		code: { js: createExampleJs, ts: createExampleTs },
 	},
@@ -351,7 +365,7 @@ const jabMembers = [
 		],
 		usage: [
 			"Use when refresh policy depends on selected props rather than every change in the props provider result.",
-			"The comparator receives already materialized props objects, including any declared keys.",
+			"The comparator receives already materialized props objects and does not include reconciliation metadata such as `key`.",
 		],
 	},
 	{
@@ -619,27 +633,26 @@ type Tag =
 		title: "Props model",
 		body: [
 			"Props are represented as provider functions rather than plain objects. This allows Maoka to read current props lazily and compare them across refresh cycles.",
-			"`Props<$Props>` describes the external blueprint call shape; `DefinitionProps<$Props>` describes the normalized `params.props()` result seen inside a definition.",
+			"`Props<$Props>` describes the external blueprint props provider type, `ComponentMetadata` carries reconciliation metadata such as keys, and `DefinitionProps<$Props>` describes the normalized `params.props()` result seen inside a definition.",
 		],
-		code: `type KeyProps = { key?: Key }
-type NoProps = void
+		code: `type NoProps = void
 type BaseProps = Record<string, any> | NoProps
+type EmptyProps = Record<never, never>
+type ComponentMetadata = {
+	key?: Key
+}
 
 type Props<
 	$Props extends BaseProps = NoProps,
 > = $Props extends NoProps
-	? (() => KeyProps) | NoProps
-	: $Props extends KeyProps
-		? () => $Props
-		: () => $Props & KeyProps
+	? NoProps
+	: () => $Props
 
 type DefinitionProps<
 	$Props extends BaseProps,
 > = $Props extends NoProps
-	? () => Required<KeyProps>
-	: $Props extends Required<KeyProps>
-		? () => $Props
-		: () => $Props & Required<KeyProps>`,
+	? () => EmptyProps
+	: () => $Props`,
 	},
 	{
 		id: "types-execution",
@@ -717,8 +730,11 @@ type Component<
 type Blueprint<
 	$Props extends BaseProps = NoProps,
 > = $Props extends NoProps
-	? (props?: Props<$Props>) => Maoka.Component<any, $Props>
-	: (props<$Props>) => Maoka.Component<any, $Props>
+	? (metadata?: ComponentMetadata) => Maoka.Component<any, $Props>
+	: (
+			props: Props<$Props>,
+			metadata?: ComponentMetadata,
+		) => Maoka.Component<any, $Props>
 
 type Create = <$Props extends Maoka.BaseProps = Maoka.NoProps>(
 	definition: Maoka.ComponentDefinition<$Props>,
@@ -888,7 +904,8 @@ const behaviorNotes = [
 	"`props()` is a provider that yields the current normalized props object, not a snapshot captured at blueprint creation time.",
 	"`refresh$()` schedules a refresh through the active root or renderer rather than forcing immediate synchronous rendering.",
 	"`use(jab)` executes the jab during the create phase and returns the jab result immediately.",
-	"Child identity is resolved by explicit `key` when present, otherwise by position.",
+	"Child identity is resolved by metadata `key` when present, otherwise by position.",
+	"`key` is not part of `props()`; provide it through blueprint metadata instead.",
 	"`beforeCreate` mutates a concrete component instance returned from a blueprint call, not the blueprint factory itself.",
 ]
 
@@ -905,6 +922,7 @@ const Page = maoka.create(() =>
 					DefaultExportSection(),
 					ConstantsSection(),
 					TypesSection(),
+					KeysSection(),
 					BehaviorSection(),
 					SiteFooter(),
 				],
@@ -1000,7 +1018,7 @@ const ExportRow = maoka.html.tr(({ props }) => () => [
 ])
 
 const ExportsBody = maoka.html.tbody(({ props }) => () =>
-	props().rows.map(row => ExportRow(() => ({ key: row.symbol, ...row }))),
+	props().rows.map(row => ExportRow(() => row, { key: row.symbol })),
 )
 
 const BehaviorCard = maoka.html.div(({ props, use }) => {
@@ -1013,7 +1031,7 @@ const BehaviorNoteList = maoka.html.ol(({ props, use }) => {
 	use(maoka.jabs.classes.set("behavior-items"))
 
 	return () =>
-		props().items.map(item => BehaviorItem(() => ({ key: item, text: item })))
+		props().items.map(item => BehaviorItem(() => ({ text: item }), { key: item }))
 })
 
 const Hero = maoka.html.header(() => () => [
@@ -1130,6 +1148,32 @@ const TypesSection = maoka.html.section(({ use }) => {
 	]
 })
 
+const KeysSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("keys"))
+
+	return () => [
+		PageSectionTitle(() => ({ text: "Keys" })),
+		SectionIntro(() => ({
+			text: "Keys belong in blueprint metadata, not in props. They control child identity for reconciliation without polluting `params.props()` with renderer bookkeeping.",
+		})),
+		ApiCard(() => ({
+			children: [
+				TextParagraph(() => ({
+					text: "When a component has props, call it as `Component(() => props, { key })`. When a component has no props, call it as `Component({ key })`.",
+				})),
+				TextParagraph(() => ({
+					text: "Inside the component, read the identity through `params.key`. `params.props()` stays data-only and now reflects only the declared props shape.",
+				})),
+				CodeBlock(() => ({
+					js: keyExampleJs,
+					ts: keyExampleTs,
+					noShadow: true,
+				})),
+			],
+		})),
+	]
+})
+
 const BehaviorSection = maoka.html.section(({ use }) => {
 	use(maoka.jabs.setId("behavior-notes"))
 
@@ -1159,7 +1203,7 @@ const BehaviorItems = maoka.html.ul(({ props, use }) => {
 	use(maoka.jabs.classes.set("behavior-items"))
 
 	return () =>
-		props().items.map(item => BehaviorItem(() => ({ key: item, text: item })))
+		props().items.map(item => BehaviorItem(() => ({ text: item }), { key: item }))
 })
 
 const TagChip = maoka.html.code(({ props, use }) => {
@@ -1186,7 +1230,7 @@ const ApiMember = maoka.html.section(({ props, use }) => {
 		CardTitle(() => ({ text: props().title })),
 		SignatureBlock(() => ({ signature: props().signature })),
 		...props().body.map(paragraph =>
-			TextParagraph(() => ({ key: paragraph, text: paragraph })),
+			TextParagraph(() => ({ text: paragraph }), { key: paragraph }),
 		),
 		UsageList(() => ({ items: props().usage })),
 		props().code
@@ -1220,7 +1264,7 @@ const TypeGroup = maoka.html.section(({ props, use }) => {
 		TypeGroupEyebrow(),
 		CardTitle(() => ({ text: props().title })),
 		...props().body.map(paragraph =>
-			TextParagraph(() => ({ key: paragraph, text: paragraph })),
+			TextParagraph(() => ({ text: paragraph }), { key: paragraph }),
 		),
 		CodeBlock(() => ({ ts: props().code, noShadow: true })),
 	]
@@ -1234,7 +1278,7 @@ const SubpackageCard = maoka.html.section(({ props, use }) => {
 		CardTitle(() => ({ text: props().title })),
 		SignatureBlock(() => ({ signature: props().importLine })),
 		...props().body.map(paragraph =>
-			TextParagraph(() => ({ key: paragraph, text: paragraph })),
+			TextParagraph(() => ({ text: paragraph }), { key: paragraph }),
 		),
 		StrongParagraph(() => ({ text: "Runtime exports" })),
 		UsageList(() => ({ items: props().runtime })),
@@ -1268,7 +1312,7 @@ const TagList = maoka.html.div(({ props, use }) => {
 
 	return () =>
 		props().tags.map(tag =>
-			TagChip(() => ({ key: tag, tag })),
+			TagChip(() => ({ tag }), { key: tag }),
 		)
 })
 

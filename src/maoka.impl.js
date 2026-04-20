@@ -10,11 +10,18 @@ export * as jabs from "./jabs.impl.js"
 export const create = definition => {
 	const type = {}
 
-	const blueprint = props =>
-		createComponent(props, type, (root, parent, beforeCreateHandlers) =>
+	const blueprint = (propsOrMetadata, metadata) => {
+		const normalizedArgs = normalizeBlueprintArgs(propsOrMetadata, metadata)
+
+		return createComponent(
+			normalizedArgs.props,
+			normalizedArgs.metadata,
+			type,
+			(root, parent, beforeCreateHandlers) =>
 			createBase(
 				root,
-				props,
+				normalizedArgs.props,
+				normalizedArgs.metadata,
 				parent,
 				definition,
 				parent.value,
@@ -22,6 +29,7 @@ export const create = definition => {
 				beforeCreateHandlers,
 			),
 		)
+	}
 
 	blueprint[BLUEPRINT_META] = true
 
@@ -38,11 +46,18 @@ export const create = definition => {
 export const pure = (tag, definition) => {
 	const type = { tag }
 
-	const blueprint = props =>
-		createComponent(props, type, (root, parent, beforeCreateHandlers) =>
+	const blueprint = (propsOrMetadata, metadata) => {
+		const normalizedArgs = normalizeBlueprintArgs(propsOrMetadata, metadata)
+
+		return createComponent(
+			normalizedArgs.props,
+			normalizedArgs.metadata,
+			type,
+			(root, parent, beforeCreateHandlers) =>
 			createBase(
 				root,
-				props,
+				normalizedArgs.props,
+				normalizedArgs.metadata,
 				parent,
 				definition,
 				root.createValue(tag),
@@ -50,6 +65,7 @@ export const pure = (tag, definition) => {
 				beforeCreateHandlers,
 			),
 		)
+	}
 
 	blueprint[BLUEPRINT_META] = true
 
@@ -65,11 +81,9 @@ export const isBlueprint = value =>
 export const isNode = value => isRecord(value) && Boolean(value[NODE_META])
 
 export const getComponentKey = component => {
-	const props = component[COMPONENT_META]?.props
+	const metadata = component[COMPONENT_META]?.metadata
 
-	if (!props) return undefined
-
-	return props()?.key
+	return metadata?.key
 }
 
 export const getComponentType = component => component[COMPONENT_META]?.type
@@ -78,6 +92,7 @@ export const getNodeComponentType = node => node.componentType
 
 export const updateNodeComponent = (node, component) => {
 	node.updateProps(component[COMPONENT_META]?.props)
+	node.updateMetadata?.(component[COMPONENT_META]?.metadata)
 }
 
 /**
@@ -148,11 +163,12 @@ const NODE_META = Symbol("maoka.node")
 /**
  * Internal function to create a Maoka node.
  *
- * @type {<$Type = any>(root: Maoka.Root, props: Maoka.Props, parent: Maoka.Node, definition: Maoka.ComponentDefinition, value: $Type) => Maoka.Node}
+ * @type {<$Type = any>(root: Maoka.Root, props: Maoka.Props, metadata: Maoka.ComponentMetadata | undefined, parent: Maoka.Node, definition: Maoka.ComponentDefinition, value: $Type) => Maoka.Node}
  */
 const createBase = (
 	root,
 	initialProps,
+	initialMetadata,
 	parent,
 	definition,
 	value,
@@ -160,20 +176,36 @@ const createBase = (
 	beforeCreateHandlers,
 ) => {
 	const NO_RENDER_PHASE = () => undefined
-	let key = root.createKey()
+	const intrinsicKey = root.createKey()
+	let key = intrinsicKey
 	let initialized = false
 	let propsSource = initialProps
+	let metadataSource = initialMetadata
+
+	const syncMetadata = () => {
+		const metadata = normalizeMetadata(metadataSource)
+
+		key = metadata?.key ?? intrinsicKey
+		node.key = key
+
+		return metadata
+	}
 
 	const syncProps = () => {
-		if (!propsSource) return { key }
+		syncMetadata()
+
+		if (!propsSource) {
+			node.propsChanged = initialized
+				? havePropsChanged(node.propsData, {})
+				: false
+			node.propsData = {}
+			initialized = true
+
+			return {}
+		}
 
 		const extractedProps = propsSource() ?? {}
 		const previousProps = node.propsData
-
-		if ("key" in extractedProps) {
-			key = extractedProps.key
-			node.key = key
-		}
 
 		node.propsChanged = initialized
 			? havePropsChanged(previousProps, extractedProps)
@@ -185,11 +217,7 @@ const createBase = (
 		return extractedProps
 	}
 
-	const props = () => {
-		const extractedProps = syncProps()
-
-		return { ...extractedProps, key }
-	}
+	const props = () => syncProps()
 
 	/** @type {Maoka.Node} */
 	const node = {
@@ -220,6 +248,10 @@ const createBase = (
 		updateProps: nextProps => {
 			propsSource = nextProps
 		},
+		updateMetadata: nextMetadata => {
+			metadataSource = nextMetadata
+			syncMetadata()
+		},
 	}
 	markNode(node)
 
@@ -229,6 +261,8 @@ const createBase = (
 		value,
 		refresh$: () => root.refreshNode(node),
 		get key() {
+			syncMetadata()
+
 			return key
 		},
 		rootKey: root.key,
@@ -247,6 +281,7 @@ const createBase = (
 	}
 
 	try {
+		syncMetadata()
 		props()
 		beforeCreateHandlers.forEach(handler => handler(params))
 		const render = definition(params)
@@ -271,7 +306,7 @@ const createBase = (
 	return node
 }
 
-const createComponent = (props, type, instantiate) => {
+const createComponent = (props, metadata, type, instantiate) => {
 	const beforeCreateHandlers = []
 	const component = (root, parent) =>
 		instantiate(root, parent, beforeCreateHandlers)
@@ -282,7 +317,7 @@ const createComponent = (props, type, instantiate) => {
 		return component
 	}
 
-	component[COMPONENT_META] = { props, type }
+	component[COMPONENT_META] = { props, metadata, type }
 
 	return component
 }
@@ -295,6 +330,27 @@ const havePropsChanged = (previousProps = {}, nextProps = {}) =>
 	) || Object.keys(previousProps ?? {}).some(propKey => !(propKey in nextProps))
 
 const isRecord = value => typeof value === "object" && value !== null
+const isMetadata = value => isRecord(value) && !Array.isArray(value)
+
+const normalizeMetadata = metadata => {
+	if (!isMetadata(metadata)) return undefined
+
+	return metadata
+}
+
+const normalizeBlueprintArgs = (propsOrMetadata, metadata) => {
+	if (typeof propsOrMetadata === "function") {
+		return {
+			props: propsOrMetadata,
+			metadata: normalizeMetadata(metadata),
+		}
+	}
+
+	return {
+		props: undefined,
+		metadata: normalizeMetadata(propsOrMetadata),
+	}
+}
 
 export const markNode = node => {
 	node[NODE_META] = true

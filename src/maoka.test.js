@@ -33,7 +33,7 @@ const createRoot = () => {
 		key: "parent",
 		value: { tag: "parent" },
 		propsData: {},
-		props: () => ({ key: "parent" }),
+		props: () => ({}),
 		root,
 		parent: null,
 		lastRenderResult: null,
@@ -100,10 +100,10 @@ describe("maoka components", () => {
 		params.refresh$()
 		expect(refreshedNodes).toEqual([node])
 
-		expect(node.props()).toEqual({ id: "box", key: "key-1" })
+		expect(node.props()).toEqual({ id: "box" })
 		expect(refreshedNodes).toEqual([node])
 
-		expect(node.props()).toEqual({ id: "box", key: "key-1" })
+		expect(node.props()).toEqual({ id: "box" })
 		expect(refreshedNodes).toEqual([node])
 	})
 
@@ -118,7 +118,7 @@ describe("maoka components", () => {
 
 				return params.key
 			}
-		})(() => ({ id: "box", key: "custom-key" }))
+		})(() => ({ id: "box" }), { key: "custom-key" })
 
 		const returned = Component.beforeCreate(params => {
 			calls.push(`before:first:${params.key}`)
@@ -151,9 +151,8 @@ describe("maoka components", () => {
 
 	test("initial props read does not queue a refresh", () => {
 		const { parent, refreshedNodes, root } = createRoot()
-		const node = maoka.create(params => () => params.key)(() => ({
-			key: "custom-key",
-		}))(root, parent)
+		const node = maoka
+			.create(params => () => params.key)({ key: "custom-key" })(root, parent)
 
 		expect(node.key).toBe("custom-key")
 		expect(node.lastRenderResult).toBe("custom-key")
@@ -184,7 +183,7 @@ describe("maoka components", () => {
 		const { parent, root } = createRoot()
 		const Component = maoka.create(({ props }) => () => props().label)
 		const Blueprint = maoka.html.div(() => () => "A")
-		const component = Component(() => ({ key: "helper-key", label: "A" }))
+		const component = Component(() => ({ label: "A" }), { key: "helper-key" })
 		const node = component(root, parent)
 
 		expect(maoka.guards).toEqual({
@@ -207,11 +206,9 @@ describe("maoka components", () => {
 		expect(getComponentType(component)).toBe(node.componentType)
 		expect(getNodeComponentType(node)).toBe(node.componentType)
 
-		updateNodeComponent(
-			node,
-			Component(() => ({ key: "helper-key", label: "B" })),
-		)
+		updateNodeComponent(node, Component(() => ({ label: "B" }), { key: "next-key" }))
 		expect(node.props().label).toBe("B")
+		expect(node.key).toBe("next-key")
 	})
 
 	test("bubbles initial render errors to parent error handlers", () => {
@@ -335,7 +332,7 @@ describe("maoka components", () => {
 		).toThrow(error)
 	})
 
-	test("props update the node key without self-scheduling refresh from props reads", () => {
+	test("metadata updates the node key without self-scheduling refresh from props reads", () => {
 		const { parent, refreshedNodes, root } = createRoot()
 		let count = 1
 		let key = 0
@@ -344,7 +341,7 @@ describe("maoka components", () => {
 			const currentProps = props()
 
 			return `Count: ${currentProps.count}`
-		})(() => ({ count, key }))(root, parent)
+		})(() => ({ count }), { key })(root, parent)
 
 		expect(node.key).toBe(0)
 		expect(node.lastRenderResult).toBe("Count: 1")
@@ -354,15 +351,29 @@ describe("maoka components", () => {
 		expect(refreshedNodes).toEqual([])
 
 		count = 2
+		node.updateProps(() => ({ count }))
 
 		expect(node.render()).toBe("Count: 2")
 		expect(refreshedNodes).toEqual([])
 
 		key = ""
+		node.updateMetadata({ key })
 
 		expect(node.render()).toBe("Count: 2")
 		expect(node.key).toBe("")
 		expect(refreshedNodes).toEqual([])
+	})
+
+	test("no-props blueprints accept metadata as the only argument", () => {
+		const { parent, root } = createRoot()
+		const node = maoka.create(params => () => params.key)({ key: "standalone" })(
+			root,
+			parent,
+		)
+
+		expect(node.key).toBe("standalone")
+		expect(node.props()).toEqual({})
+		expect(node.lastRenderResult).toBe("standalone")
 	})
 
 	test("fresh props objects do not queue refresh while being read", () => {

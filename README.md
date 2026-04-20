@@ -89,10 +89,17 @@ This is what powers behaviors such as:
 
 ### Reconciliation Tracks Identity
 
-Children are reconciled by key when a key exists, or by position otherwise.
-Matching nodes are reused rather than remounted, which keeps create-phase state
-and lifecycle intact while renderer values are moved, inserted, refreshed, or
-removed.
+Children are reconciled by metadata keys when a key exists, or by position
+otherwise. Matching nodes are reused rather than remounted, which keeps
+create-phase state and lifecycle intact while renderer values are moved,
+inserted, refreshed, or removed.
+
+Keys live outside props:
+
+```ts
+Row(() => ({ id, label }), { key: id })
+Spinner({ key: "orders-spinner" })
+```
 
 The test suite also confirms related behavior such as keyed reordering without
 remounting and unkeyed remounts when component identity changes.

@@ -165,7 +165,7 @@ const createRootNode = (root, container) => {
 		key: root.key,
 		value: container,
 		props: {},
-		props: () => ({ key: root.key }),
+		props: () => ({}),
 		root,
 		render: () => root.children,
 		lastRenderResult: root.children,

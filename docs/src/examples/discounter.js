@@ -6,10 +6,12 @@ const createDigits = (count, place) => {
 
 	return [
 		...(Math.abs(count) >= nextPlace ? createDigits(count, nextPlace) : []),
-		DiscounterDigit(() => ({
-			key: place,
-			digit: Math.floor(Math.abs(count) / place) % 10,
-		})),
+		DiscounterDigit(
+			() => ({
+				digit: Math.floor(Math.abs(count) / place) % 10,
+			}),
+			{ key: place },
+		),
 	]
 }
 
@@ -49,7 +51,7 @@ export const Discounter = maoka.create(({ refresh$ }) => {
 	}
 
 	return () => [
-		DiscounterButton(() => ({ key: "decrement", decrement })),
+		DiscounterButton(() => ({ decrement }), { key: "decrement" }),
 		...createDigits(count, 1),
 	]
 })

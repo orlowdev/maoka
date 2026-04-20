@@ -208,10 +208,8 @@ describe("maoka test renderer", () => {
 					`Count: ${props().count}`,
 		)
 		const Counter = maoka.create(() => () => [
-			Count(() => ({ key: "count", count })),
-			count > 0
-				? maoka.html.button(() => () => "+")(() => ({ key: "inc" }))
-				: null,
+			Count(() => ({ count }), { key: "count" }),
+			count > 0 ? maoka.html.button(() => () => "+")({ key: "inc" }) : null,
 		])
 		const renderer = render(Counter())
 
@@ -358,7 +356,7 @@ describe("maoka test renderer", () => {
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
-			return () => (visible ? Child(() => ({ key: "child" })) : null)
+			return () => (visible ? Child({ key: "child" }) : null)
 		})
 		const renderer = render(App())
 
@@ -393,7 +391,7 @@ describe("maoka test renderer", () => {
 			refresh = params.refresh$
 
 			return () =>
-				Count(() => ({ key: "count", count })).beforeCreate(params => {
+				Count(() => ({ count }), { key: "count" }).beforeCreate(params => {
 					calls.push(`before:${params.key}`)
 				})
 		})
@@ -424,7 +422,7 @@ describe("maoka test renderer", () => {
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
-			return () => items.map(id => Row(() => ({ key: id, id })))
+			return () => items.map(id => Row(() => ({ id }), { key: id }))
 		})
 		const renderer = render(App())
 
@@ -463,7 +461,7 @@ describe("maoka test renderer", () => {
 		})
 		const App = maoka.create(() => () => [
 			maoka.html.div(() => () => "A")(),
-			Silent(() => ({ key: "silent" })),
+			Silent({ key: "silent" }),
 			maoka.html.div(() => () => "B")(),
 		])
 		const renderer = render(App())
@@ -554,7 +552,7 @@ describe("maoka test renderer", () => {
 		const App = maoka.create(() => () => Count(() => ({ count })))
 		const renderer = render(App())
 
-		expect(renderer.node.parent.props()).toEqual({ key: renderer.root.key })
+		expect(renderer.node.parent.props()).toEqual({})
 		expect(renderer.node.parent.render()).toBe(renderer.root.children)
 
 		count = 1

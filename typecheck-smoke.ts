@@ -38,6 +38,14 @@ const domRoot = render(document.body, FocusInput())
 
 const Label = maoka.html.span(() => () => "Ready")
 const LabelBlueprint = maoka.html.span(() => () => "Ready")
+const KeyedLabel = maoka.html.span<{ text: string }>(({ props }) => () => props().text)
+const LegacyKeyRead = maoka.html.span<{ text: string }>(({ props }) => {
+	// @ts-expect-error key moved out of props
+	void props().key
+
+	return () => props().text
+})
+const Spinner = maoka.html.output(() => () => "Loading")
 const StringProbe = maoka.create(({ use }) => {
 	const tag = use(maokaString.jabs.ifInString(({ value }) => value.tag))
 	const title = use(maokaString.jabs.attributes.get("title"))
@@ -61,6 +69,9 @@ const StringProbe = maoka.create(({ use }) => {
 })
 
 renderTest(Label())
+renderTest(KeyedLabel(() => ({ text: "Ready" }), { key: "label" }))
+renderTest(LegacyKeyRead(() => ({ text: "Ready" })))
+renderTest(Spinner({ key: "spinner" }))
 renderToString(Label())
 renderToString(StringProbe())
 
@@ -113,3 +124,6 @@ createRoot(options)
 const probe = renderJab(({ refresh$ }) => ({ trigger: refresh$ }))
 
 probe.result().trigger()
+
+// @ts-expect-error props blueprints still require a props thunk first
+KeyedLabel({ key: "missing-props" })

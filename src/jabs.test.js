@@ -67,7 +67,7 @@ describe("maoka jabs", () => {
 		const App = maoka.create(params => {
 			refresh = params.refresh$
 
-			return () => Counter(() => ({ key: "counter", ...props }))
+			return () => Counter(() => props, { key: "counter" })
 		})
 		const renderer = render(App())
 

@@ -40,7 +40,7 @@ export const renderWidget = (value, component, options = {}) => {
 const createRootNode = (root, value) => ({
 	key: root.key,
 	value,
-	props: () => ({ key: root.key }),
+	props: () => ({}),
 	root,
 	render: () => root.children,
 	lastRenderResult: root.children,
@@ -98,7 +98,7 @@ const CardBody = maoka.create(({ props }) => {
 	// This node is implicit: it has no own renderer value.
 	// It reuses the parent value and only returns child templates.
 	return () => [
-		Title(() => ({ key: "title", label: props().title })),
+		Title(() => ({ label: props().title }), { key: "title" }),
 		props().content,
 	]
 })
@@ -106,10 +106,9 @@ const CardBody = maoka.create(({ props }) => {
 const Card = maoka.html.article(({ props }) => {
 	// This node is concrete: maoka.html.article creates a renderer value.
 	return () => CardBody(() => ({
-		key: "body",
 		title: props().title,
 		content: props().content,
-	}))
+	}), { key: "body" })
 })`
 
 const Page = maoka.create(() =>
@@ -183,27 +182,27 @@ const ListItemBody = maoka.html.span(({ props }) => () => props().text)
 const FlowList = maoka.html.ul(({ props, use }) => {
 	use(maoka.jabs.classes.set("flow-list"))
 
-	return () => props().items.map(item => FlowItem(() => ({ key: item.title, ...item })))
+	return () => props().items.map(item => FlowItem(() => item, { key: item.title }))
 })
 
 const ContractList = maoka.html.ul(({ props, use }) => {
 	use(maoka.jabs.classes.set("contract-list"))
 
 	return () =>
-		props().items.map(item => ContractItem(() => ({ key: item.title, ...item })))
+		props().items.map(item => ContractItem(() => item, { key: item.title }))
 })
 
 const CompareGrid = maoka.html.div(({ props, use }) => {
 	use(maoka.jabs.classes.set("compare-grid"))
 
-	return () => props().items.map(item => CompareCard(() => ({ key: item.title, ...item })))
+	return () => props().items.map(item => CompareCard(() => item, { key: item.title }))
 })
 
 const ChecklistList = maoka.html.ul(({ props, use }) => {
 	use(maoka.jabs.classes.set("checklist"))
 
 	return () =>
-		props().items.map(item => ContractItem(() => ({ key: item.title, ...item })))
+		props().items.map(item => ContractItem(() => item, { key: item.title }))
 })
 
 const Hero = maoka.html.header(() => () => [

@@ -176,7 +176,7 @@ const Counter = maoka.create(({ refresh$ }) => {
 const OrdersTitle = maoka.html.h2(() => () => "Orders")
 
 const Dashboard = maoka.create(() => {
-	return () => [OrdersTitle(), Counter(() => ({ key: "orders-counter" }))]
+	return () => [OrdersTitle(), Counter({ key: "orders-counter" })]
 })`
 
 const childrenBadExample = `const OrdersCount = maoka.html.output(({ props }) => {
@@ -207,10 +207,7 @@ const Dashboard = maoka.create(({ refresh$ }) => {
 const arraysGoodExample = `const TodoList = maoka.create(({ props }) => {
 	return () =>
 		props().items.map(item =>
-			TodoRow(() => ({
-				key: item.id,
-				item,
-			})),
+			TodoRow(() => ({ item }), { key: item.id }),
 		)
 })`
 
@@ -397,7 +394,7 @@ const sections = [
 		id: "arrays-as-render-candidates",
 		title: "Arrays are first-class render candidates",
 		body: [
-			"Arrays are valid render output in Maoka. Reconciliation is strongest when array items carry keys, because keyed children preserve identity even when order changes.",
+			"Arrays are valid render output in Maoka. Reconciliation is strongest when array items carry metadata keys, because keyed children preserve identity even when order changes.",
 			"Without keys, array diffing falls back to positional matching. That is acceptable for fixed-order output, but much less stable for insertions, removals, and reordering.",
 		],
 		examples: [

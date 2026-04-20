@@ -193,7 +193,7 @@ describe("maoka string renderer", () => {
 		const parent = {
 			key: "parent",
 			value: rootValue,
-			props: () => ({ key: "parent" }),
+			props: () => ({}),
 			root,
 			render: () => root.children,
 			lastRenderResult: root.children,
@@ -263,7 +263,7 @@ describe("maoka string renderer", () => {
 	test("renders nested implicit create components", () => {
 		const Title = maoka.html.h1(({ props }) => () => props().label)
 		const Body = maoka.create(({ props }) => () => [
-			Title(() => ({ key: "title", label: props().title })),
+			Title(() => ({ label: props().title }), { key: "title" }),
 			props().content,
 		])
 		const App = maoka.html.article(({ props }) => () =>
@@ -383,7 +383,7 @@ describe("maoka string renderer", () => {
 				refresh$()
 			})
 
-			return () => items.map(id => Row(() => ({ key: id, id })))
+			return () => items.map(id => Row(() => ({ id }), { key: id }))
 		})
 
 		expect(render(App())).toBe("<span>c</span><span>a</span>")
