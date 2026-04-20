@@ -1,4 +1,5 @@
 import maoka from "../../../index.js"
+import maokaDom from "../../../dom/index.js"
 
 const createDigits = (count, place) => {
 	const nextPlace = place * 10
@@ -12,16 +13,29 @@ const createDigits = (count, place) => {
 	]
 }
 
-const DiscounterDigit = maoka.html.div(({ props, value }) => {
-	value.className = "demo-tile"
+const DiscounterDigit = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("demo-tile"))
 
 	return () => props().digit
 })
 
-const DiscounterButton = maoka.html.button(({ props, value }) => {
-	value.type = "button"
-	value.className = "demo-tile demo-action"
-	value.onclick = () => props().decrement()
+const DiscounterButton = maoka.html.button(({ props, use }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
+	use(maoka.jabs.classes.set("demo-tile", "demo-action"))
+	use(
+		maokaDom.jabs.ifInDOM(({ value, lifecycle }) => {
+			const sync = () => {
+				value.onclick = () => props().decrement()
+			}
+
+			sync()
+			lifecycle.beforeRefresh(() => {
+				sync()
+
+				return false
+			})
+		}),
+	)
 
 	return () => "-"
 })

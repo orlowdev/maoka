@@ -4,8 +4,10 @@ import maoka from "../index.js"
 import {
 	getComponentKey,
 	getComponentType,
+	isBlueprint,
 	getNodeComponentType,
 	isComponent,
+	isNode,
 	updateNodeComponent,
 } from "./maoka.impl.js"
 
@@ -181,11 +183,25 @@ describe("maoka components", () => {
 	test("exposes component helper metadata functions", () => {
 		const { parent, root } = createRoot()
 		const Component = maoka.create(({ props }) => () => props().label)
+		const Blueprint = maoka.html.div(() => () => "A")
 		const component = Component(() => ({ key: "helper-key", label: "A" }))
 		const node = component(root, parent)
 
+		expect(maoka.guards).toEqual({
+			isBlueprint,
+			isComponent,
+			isNode,
+		})
+		expect(isBlueprint(Blueprint)).toBe(true)
+		expect(isBlueprint(component)).toBe(false)
+		expect(isBlueprint(() => null)).toBe(false)
 		expect(isComponent(component)).toBe(true)
+		expect(isComponent(Blueprint)).toBe(false)
 		expect(isComponent(() => null)).toBe(false)
+		expect(isNode(node)).toBe(true)
+		expect(isNode(parent)).toBe(false)
+		expect(isNode(root)).toBe(false)
+		expect(isNode(null)).toBe(false)
 		expect(getComponentKey(component)).toBe("helper-key")
 		expect(getComponentKey(() => null)).toBe(undefined)
 		expect(getComponentType(component)).toBe(node.componentType)

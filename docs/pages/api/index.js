@@ -2,7 +2,11 @@ import "./style.css"
 import maoka, { MAOKA } from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
-import { DocsNav } from "../../src/components/docs-nav.js"
+import {
+	DocsArticle,
+	DocsLayout,
+	DocsPageBoundary,
+} from "../../src/components/docs-page.js"
 import { NotebookSheet } from "../../src/components/notebook-sheet.js"
 import { RainbowCard } from "../../src/components/rainbow-card.js"
 import { SiteFooter } from "../../src/components/site-footer.js"
@@ -14,8 +18,8 @@ const counterValueJs = `const CounterValue = maoka.html.output(({ props }) => {
 	return () => String(props().count)
 })`
 
-const incrementButtonJs = `const IncrementButton = maoka.html.button(({ props, value }) => {
-	value.type = "button"
+const incrementButtonJs = `const IncrementButton = maoka.html.button(({ props, use, value }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
 	value.onclick = () => props().increment()
 
 	return () => "Increment"
@@ -23,8 +27,8 @@ const incrementButtonJs = `const IncrementButton = maoka.html.button(({ props, v
 
 const incrementButtonTs = `const IncrementButton = maoka.html.button<{
 	increment: () => void
-}>(({ props, value }) => {
-	value.type = "button"
+}>(({ props, use, value }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
 	value.onclick = () => props().increment()
 
 	return () => "Increment"
@@ -72,20 +76,20 @@ const Counter = maoka.create<{ initialCount: number }>(
 
 Counter(() => ({ initialCount: 0, key: "counter" }))`
 
-const pureExampleJs = `const Badge = maoka.pure("span", ({ props, value }) => {
-	value.className = "badge"
+const pureExampleJs = `const Badge = maoka.pure("span", ({ props, use }) => {
+	use(maoka.jabs.classes.set("badge"))
 
 	return () => props().label
 })`
 
-const pureExampleTs = `const Badge = maoka.pure<{ label: string }>("span", ({ props, value }) => {
-	value.className = "badge"
+const pureExampleTs = `const Badge = maoka.pure<{ label: string }>("span", ({ props, use }) => {
+	use(maoka.jabs.classes.set("badge"))
 
 	return () => props().label
 })`
 
-const taggedExampleJs = `const Notice = maoka.html.section(({ props, value }) => {
-	value.dataset.kind = props().kind
+const taggedExampleJs = `const Notice = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.dataAttributes.assign("kind", () => props().kind))
 
 	return () => props().message
 })`
@@ -93,26 +97,57 @@ const taggedExampleJs = `const Notice = maoka.html.section(({ props, value }) =>
 const taggedExampleTs = `const Notice = maoka.html.section<{
 	kind: "info" | "warning"
 	message: string
-}>(({ props, value }) => {
-	value.dataset.kind = props().kind
+}>(({ props, use }) => {
+	use(maoka.jabs.dataAttributes.assign("kind", () => props().kind))
 
 	return () => props().message
 })`
 
 const jabsExampleJs = `const Price = maoka.html.output(({ props, use }) => {
+	use(maoka.jabs.setId("price"))
 	use(
 		maoka.jabs.shouldComponentRefresh(
 			(prevProps, nextProps) => prevProps.value !== nextProps.value,
+		),
+	)
+	use(
+		maoka.jabs.dataAttributes.assign("trend", () =>
+			props().change >= 0 ? "up" : "down",
+		),
+	)
+	use(
+		maoka.jabs.aria.assign("label", () => \`Price \${props().value}\`),
+	)
+	use(
+		maoka.jabs.classes.assign(() =>
+			props().change >= 0 ? "price is-up" : "price is-down",
 		),
 	)
 
 	return () => \`$\${props().value}\`
 })`
 
-const jabsExampleTs = `const Price = maoka.html.output<{ value: number }>(({ props, use }) => {
+const jabsExampleTs = `const Price = maoka.html.output<{
+	value: number
+	change: number
+}>(({ props, use }) => {
+	use(maoka.jabs.setId("price"))
 	use(
 		maoka.jabs.shouldComponentRefresh(
 			(prevProps, nextProps) => prevProps.value !== nextProps.value,
+		),
+	)
+	use(
+		maoka.jabs.dataAttributes.assign("trend", () =>
+			props().change >= 0 ? "up" : "down",
+		),
+	)
+	use(
+		maoka.jabs.aria.assign("label", () => \`Price \${props().value}\`),
+	)
+	use(
+		maoka.jabs.classes.assign(() =>
+			props().change >= 0 ? "price is-up" : "price is-down",
 		),
 	)
 
@@ -122,20 +157,20 @@ const jabsExampleTs = `const Price = maoka.html.output<{ value: number }>(({ pro
 const domRenderExampleTs = `import maoka from "maoka"
 import maokaDom, { render, type MaokaDom } from "maoka/dom"
 
-const FocusInput = maoka.html.input(({ use, value }) => {
-	use(
-		maokaDom.jabs.ifInDOM<HTMLElement>(({ value }) => {
-			value.focus()
-		}),
-	)
+const FocusInput = maoka.html.input(({ lifecycle, use }) => {
+	use(maoka.jabs.attributes.set("type", "text"))
 
-	value.type = "text"
+	const input = use(maokaDom.jabs.ifInDOM<HTMLInputElement>(({ value }) => value))
+
+	lifecycle.afterMount(() => {
+		input?.focus()
+	})
 })
 
 render(document.body, FocusInput())`
 
 const testRenderExampleTs = `import maoka from "maoka"
-import { render, renderJab } from "maoka/test"
+import maokaTest, { render, renderJab } from "maoka/test"
 
 const Label = maoka.html.span<{ text: string }>(
 	({ props }) => () => props().text,
@@ -144,11 +179,27 @@ const Label = maoka.html.span<{ text: string }>(
 const screen = render(Label(() => ({ text: "Ready" })))
 screen.text()
 
-const probe = renderJab(({ refresh$ }) => ({
-	trigger: refresh$,
-}))
-probe.result().trigger()
-probe.flush()`
+const probe = renderJab(
+	maokaTest.jabs.ifInTest(({ value }) => value.tag),
+)
+probe.result()`
+
+const stringRenderExampleTs = `import maoka from "maoka"
+import maokaString, { render, type MaokaString } from "maoka/string"
+
+const Badge = maoka.html.span(({ use }) => {
+	use(maoka.jabs.classes.set("badge"))
+	const tag = use(maokaString.jabs.ifInString(({ value }) => value.tag))
+
+	void tag
+	return () => "Ready"
+})
+
+const html = render(Badge())
+const stringRenderer: MaokaString = maokaString
+
+void html
+void stringRenderer`
 
 const exportsRows = [
 	{
@@ -316,6 +367,119 @@ const jabMembers = [
 			"It does not handle unrelated errors automatically; it only reacts to descendant errors presented through lifecycle error bubbling.",
 		],
 	},
+	{
+		id: "maoka-jabs-attributes",
+		title: "maoka.jabs.attributes",
+		signature: `attributes: {
+	get(name: string): Maoka.Jab<any, any, string | undefined>
+	set(name: string, value?: string): Maoka.Jab
+	assign(
+		name: string,
+		getValue: () => string | null | undefined,
+	): Maoka.Jab
+}`,
+		body: [
+			"Shared attribute jabs for renderer values that support attribute-style mutation.",
+			"`get` reads the current attribute value, `set` writes once during create, and `assign` keeps the attribute synchronized across refreshes without forcing render-phase work on its own.",
+		],
+		usage: [
+			"Use for generic HTML, SVG, MathML, string-renderer, and test-renderer attribute work that does not need imperative platform APIs.",
+			"`assign` removes the attribute when `getValue()` returns `null` or `undefined`.",
+		],
+	},
+	{
+		id: "maoka-jabs-classes",
+		title: "maoka.jabs.classes",
+		signature: `classes: {
+	set(...classes: string[]): Maoka.Jab
+	add(...classes: string[]): Maoka.Jab
+	remove(...classes: string[]): Maoka.Jab
+	has(className: string): Maoka.Jab<any, any, boolean | undefined>
+	toggle(
+		getEnabled: () => boolean,
+		className: string,
+	): Maoka.Jab
+	assign(
+		getClassName: () => string | null | undefined,
+	): Maoka.Jab
+}`,
+		body: [
+			"Shared class-list helpers built on top of renderer-specific class mutation logic.",
+			"They normalize tokens, reject invalid whitespace-bearing class names, and provide both one-shot and refresh-synchronized forms.",
+		],
+		usage: [
+			"Use `set`, `add`, and `remove` for create-phase class wiring; use `assign` or `toggle` when the class output must track state or props over refreshes.",
+			"`has` returns `undefined` when the active renderer value does not implement the class helper contract.",
+		],
+	},
+	{
+		id: "maoka-jabs-data-attributes",
+		title: "maoka.jabs.dataAttributes",
+		signature: `dataAttributes: {
+	get(name: string): Maoka.Jab<any, any, string | undefined>
+	set(name: string, value?: string): Maoka.Jab
+	assign(
+		name: string,
+		getValue: () => string | null | undefined,
+	): Maoka.Jab
+}`,
+		body: [
+			"Convenience wrapper over `maoka.jabs.attributes` that automatically prefixes names with `data-`.",
+			"It keeps docs and application code explicit about semantic `data-*` usage without manual string concatenation.",
+		],
+		usage: [
+			"Use when the attribute is semantically part of `dataset` rather than a generic attribute slot.",
+			"`get(\"kind\")` reads `data-kind`; `assign(\"state\", ...)` keeps `data-state` synchronized over refreshes.",
+		],
+	},
+	{
+		id: "maoka-jabs-aria",
+		title: "maoka.jabs.aria",
+		signature: `aria: {
+	get(name: string): Maoka.Jab<any, any, string | undefined>
+	set(name: string, value?: string): Maoka.Jab
+	assign(
+		name: string,
+		getValue: () => string | null | undefined,
+	): Maoka.Jab
+}`,
+		body: [
+			"Convenience wrapper over `maoka.jabs.attributes` that automatically prefixes names with `aria-`.",
+			"It keeps accessibility attributes close to the component or behavior layer that owns them.",
+		],
+		usage: [
+			"Use for stable ARIA wiring such as labels, expanded state, or pressed state that should stay declarative.",
+			"`assign` is a good fit when ARIA state mirrors props or local component state.",
+		],
+	},
+	{
+		id: "maoka-jabs-set-id",
+		title: "maoka.jabs.setId",
+		signature: `setId(id: string): Maoka.Jab`,
+		body: [
+			"Convenience jab equivalent to `maoka.jabs.attributes.set(\"id\", id)`.",
+			"It exists because ids are common enough to deserve a direct entry point when composing other attribute jabs.",
+		],
+		usage: [
+			"Use for stable ids decided during the create phase.",
+			"If the id depends on refreshable state or props, prefer `assignId`.",
+		],
+	},
+	{
+		id: "maoka-jabs-assign-id",
+		title: "maoka.jabs.assignId",
+		signature: `assignId(
+	getId: () => string | null | undefined,
+): Maoka.Jab`,
+		body: [
+			"Convenience jab equivalent to `maoka.jabs.attributes.assign(\"id\", getId)`.",
+			"It keeps ids synchronized across refreshes and removes the id when the getter returns `null` or `undefined`.",
+		],
+		usage: [
+			"Use when an id is derived from props, local state, or externally controlled naming schemes.",
+			"Like other assign jabs, it updates the renderer value only when the computed id actually changes.",
+		],
+	},
 ]
 
 const constantGroups = [
@@ -356,10 +520,10 @@ const subpackages = [
 		],
 		runtime: [
 			"`render(container, component, options?) => Maoka.Root<Element>` mounts a component instance into a DOM container.",
-			"`default maokaDom` currently exposes `maokaDom.jabs.ifInDOM`, a DOM-only jab helper.",
+			"`default maokaDom` exposes `ifInDOM`, `attributes`, `classes`, `dataAttributes`, `aria`, `setId`, and `assignId` under `maokaDom.jabs`.",
 		],
 		types: [
-			"`namespace MaokaDom` exports `IfInDom`, the type of the DOM guard jab factory.",
+			"`namespace MaokaDom` exports `IfInDom` plus the DOM-specific attribute, class, and id jab helper types.",
 			"`MaokaDomRenderOptions` currently exposes `createKey?: () => Maoka.Key`.",
 		],
 		code: domRenderExampleTs,
@@ -376,14 +540,35 @@ const subpackages = [
 			"`createValue(tag) => MaokaTestValue` creates an in-memory renderer value.",
 			"`render(component, options?) => MaokaTestRenderer` mounts a component instance and returns helpers such as `flush`, `text`, `find`, `findByTag`, and `toJSON`.",
 			"`renderJab(jab, options?) => MaokaTestJabRenderer<$Return>` runs a jab inside a probe component and exposes both `params()` and `result()`.",
+			"`default maokaTest` exposes `ifInTest`, `attributes`, `classes`, `dataAttributes`, `aria`, `setId`, and `assignId` under `maokaTest.jabs`.",
 			"`setup` is an alias of `renderJab`.",
 		],
 		types: [
 			"`MaokaTestValue` models a tree node with `tag`, `text`, `parent`, `children`, and arbitrary extra fields.",
 			"`MaokaTestJson` is the serialized snapshot shape returned by `toJSON()`.",
+			"`namespace MaokaTest` also exports `IfInTest` plus the test-renderer attribute, class, and id jab helper types.",
 			"`MaokaTestRenderer`, `MaokaTestJabRenderer<$Return>`, `MaokaTestRenderOptions`, and `MaokaTestJabOptions<$Return>` describe the test helpers and options surface.",
 		],
 		code: testRenderExampleTs,
+	},
+	{
+		id: "subpackage-string",
+		title: "`maoka/string`",
+		importLine: `import maokaString, { render, type MaokaString } from "maoka/string"`,
+		body: [
+			"HTML string renderer for Maoka components. It renders a component instance into serialized markup and exposes string-aware jab helpers through the default export.",
+			"The package is intended for one-shot SSR-style rendering. It preserves Maoka create/render semantics while serializing a safe subset of renderer value mutations into HTML attributes.",
+		],
+		runtime: [
+			"`render(component, options?) => string` mounts a component instance into an internal tree and returns serialized HTML markup.",
+			"`default maokaString` exposes `ifInString`, `attributes`, `classes`, `dataAttributes`, `aria`, `setId`, and `assignId` under `maokaString.jabs`.",
+		],
+		types: [
+			"`type MaokaString` describes the default namespace shape.",
+			"`namespace MaokaString` exports `IfInString` plus the string-renderer attribute, class, and id jab helper types.",
+			"`namespace MaokaString` also exports `RenderOptions`, and `MaokaStringRenderOptions` currently exposes `createKey?: () => Maoka.Key`.",
+		],
+		code: stringRenderExampleTs,
 	},
 ]
 
@@ -594,7 +779,7 @@ type Lifecycle = {
 		title: "Renderer and root types",
 		body: [
 			"These types describe the renderer contract used internally by adapters and advanced integrations.",
-			"They are part of the exported type surface, but most application code uses them indirectly through `maoka/dom`, `maoka/test`, or custom renderer implementations.",
+			"They are part of the exported type surface, but most application code uses them indirectly through `maoka/dom`, `maoka/string`, `maoka/test`, or custom renderer implementations.",
 		],
 		code: `type Root<$Type = any> = {
 	key: Key
@@ -665,6 +850,31 @@ type Node<
 		compare: (prevProps: $Props, nextProps: $Props) => boolean,
 	) => Jab<any, $Props>
 	errorBoundary: (handler: (error: Error) => void) => Jab
+	attributes: {
+		get: AttributeGet
+		set: AttributeSet
+		assign: AttributeAssign
+	}
+	classes: {
+		set: ClassesSet
+		add: ClassesAdd
+		remove: ClassesRemove
+		has: ClassesHas
+		toggle: ClassesToggle
+		assign: ClassesAssign
+	}
+	dataAttributes: {
+		get: AttributeGet
+		set: AttributeSet
+		assign: AttributeAssign
+	}
+	aria: {
+		get: AttributeGet
+		set: AttributeSet
+		assign: AttributeAssign
+	}
+	setId: SetId
+	assignId: AssignId
 }
 
 type HtmlTag = keyof HTMLElementTagNameMap
@@ -682,16 +892,12 @@ const behaviorNotes = [
 	"`beforeCreate` mutates a concrete component instance returned from a blueprint call, not the blueprint factory itself.",
 ]
 
-const Page = maoka.create(() => () => [
-	maoka.html.main(({ value }) => {
-		value.className = "docs-layout"
-
-		return () => [
-			DocsNav(),
-			maoka.html.article(({ value }) => {
-				value.className = "api-page"
-
-				return () => [
+const Page = maoka.create(() =>
+	() =>
+		DocsLayout(() => ({
+			children: DocsArticle(() => ({
+				className: "api-page",
+				children: [
 					Hero(),
 					ScopeSection(),
 					SubpackagesSection(),
@@ -701,218 +907,287 @@ const Page = maoka.create(() => () => [
 					TypesSection(),
 					BehaviorSection(),
 					SiteFooter(),
-				]
-			})(),
-		]
-	})(),
+				],
+			})),
+		})),
+)
+
+const ApiHeroEyebrow = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("eyebrow"))
+
+	return () => "Root package reference"
+})
+
+const ApiHeroTitle = maoka.html.h1(() => () => "API Reference")
+
+const ApiHeroLead = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("lede"))
+
+	return () =>
+		"Formal reference for the public surface of the `maoka` root entrypoint, including runtime exports, type exports, nested members, and the behavioral rules that shape their use."
+})
+
+const PageSectionTitle = maoka.html.h2(({ props }) => () => props().text)
+
+const SectionIntro = maoka.html.p(({ props, use }) => {
+	use(maoka.jabs.classes.set("section-intro"))
+
+	return () => props().text
+})
+
+const SectionSubheading = maoka.html.h3(({ props }) => () => props().text)
+
+const ImportsBlock = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("imports-block"))
+
+	return () => CodeBlock(() => ({ ts: props().code, noShadow: true }))
+})
+
+const ApiGrid = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("api-grid"))
+
+	return () => props().children
+})
+
+const TagGrid = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("tag-grid"))
+
+	return () => props().children
+})
+
+const TypeGrid = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("type-grid"))
+
+	return () => props().children
+})
+
+const ApiCard = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.assign(() => props().className ?? "api-card"))
+
+	return () => props().children
+})
+
+const ExportsTable = maoka.html.table(({ props, use }) => {
+	use(maoka.jabs.classes.set("exports-table"))
+
+	return () => props().children
+})
+
+const ExportHeaderCell = maoka.html.th(({ props }) => () => props().text)
+
+const ExportHeaderRow = maoka.html.tr(() => () => [
+	ExportHeaderCell(() => ({ text: "Export" })),
+	ExportHeaderCell(() => ({ text: "Kind" })),
+	ExportHeaderCell(() => ({ text: "Import" })),
+	ExportHeaderCell(() => ({ text: "Purpose" })),
 ])
+
+const ExportsHead = maoka.html.thead(() => () => ExportHeaderRow())
+
+const CodeText = maoka.html.code(({ props }) => () => props().text)
+
+const TableCell = maoka.html.td(({ props }) => () => props().text)
+
+const CodeCell = maoka.html.td(({ props }) => () =>
+	CodeText(() => ({ text: props().text })),
+)
+
+const ExportRow = maoka.html.tr(({ props }) => () => [
+	CodeCell(() => ({ text: props().symbol })),
+	TableCell(() => ({ text: props().kind })),
+	CodeCell(() => ({ text: props().importLine })),
+	TableCell(() => ({ text: props().description })),
+])
+
+const ExportsBody = maoka.html.tbody(({ props }) => () =>
+	props().rows.map(row => ExportRow(() => ({ key: row.symbol, ...row }))),
+)
+
+const BehaviorCard = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("api-card", "behavior-card"))
+
+	return () => props().children
+})
+
+const BehaviorNoteList = maoka.html.ol(({ props, use }) => {
+	use(maoka.jabs.classes.set("behavior-items"))
+
+	return () =>
+		props().items.map(item => BehaviorItem(() => ({ key: item, text: item })))
+})
 
 const Hero = maoka.html.header(() => () => [
 	ThemeToggle(),
-	maoka.html.p(({ value }) => {
-		value.className = "eyebrow"
-
-		return () => "Root package reference"
-	})(),
-	maoka.html.h1(() => () => "API Reference"),
-	maoka.html.p(({ value }) => {
-		value.className = "lede"
-
-		return () =>
-			"Formal reference for the public surface of the `maoka` root entrypoint, including runtime exports, type exports, nested members, and the behavioral rules that shape their use."
-	})(),
+	ApiHeroEyebrow(),
+	ApiHeroTitle(),
+	ApiHeroLead(),
 ])
 
-const ScopeSection = maoka.html.section(({ value }) => {
-	value.id = "scope"
+const ScopeSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("scope"))
 
 	return () => [
-		maoka.html.h2(() => () => "Scope"),
+		PageSectionTitle(() => ({ text: "Scope" })),
 		NotebookSheet(() => ({
 			variant: "note",
 			className: "scope-note",
 			children: [
-				maoka.html.p(
-					() => () =>
-						"This page documents the public API of the package root entrypoint `maoka`. It covers the default export `maoka`, the named export `MAOKA`, the exported `type Maoka`, and the exported `namespace Maoka` declarations.",
-				)(),
-				maoka.html.p(
-					() => () =>
-						"The main reference below remains focused on the root entrypoint. A separate section on this page summarizes the related `maoka/dom` and `maoka/test` subpackages, while `maoka/rendering` remains excluded. Type signatures are aligned with `maoka.d.ts`, `dom/maoka-dom.d.ts`, and `test/maoka-test.d.ts` where applicable.",
-				)(),
-				maoka.html.div(({ value }) => {
-					value.className = "imports-block"
-
-					return () => CodeBlock(() => ({ ts: importExample, noShadow: true }))
-				})(),
+				TextParagraph(() => ({
+					text: "This page documents the public API of the package root entrypoint `maoka`. It covers the default export `maoka`, the named export `MAOKA`, the exported `type Maoka`, and the exported `namespace Maoka` declarations.",
+				})),
+				TextParagraph(() => ({
+					text: "The main reference below remains focused on the root entrypoint. A separate section on this page summarizes the related `maoka/dom`, `maoka/string`, and `maoka/test` subpackages, while `maoka/rendering` remains excluded. Type signatures are aligned with `maoka.d.ts`, `dom/maoka-dom.d.ts`, `string/maoka-string.d.ts`, and `test/maoka-test.d.ts` where applicable.",
+				})),
+				ImportsBlock(() => ({ code: importExample })),
 			],
 		})),
 	]
 })
 
-const SubpackagesSection = maoka.html.section(({ value }) => {
-	value.id = "subpackages"
+const SubpackagesSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("subpackages"))
 
 	return () => [
-		maoka.html.h2(() => () => "Related subpackages"),
-		maoka.html.p(({ value }) => {
-			value.className = "section-intro"
-
-			return () =>
-				"`maoka/dom` and `maoka/test` are separate entrypoints built on top of the root API. They are documented here as companion packages rather than as part of the root module surface."
-		})(),
-		maoka.html.div(({ value }) => {
-			value.className = "api-grid"
-
-			return () => subpackages.map(pkg => SubpackageCard(() => pkg))
-		})(),
+		PageSectionTitle(() => ({ text: "Related subpackages" })),
+		SectionIntro(() => ({
+			text: "`maoka/dom`, `maoka/string`, and `maoka/test` are separate entrypoints built on top of the root API. They are documented here as companion packages rather than as part of the root module surface.",
+		})),
+		ApiGrid(() => ({
+			children: subpackages.map(pkg => SubpackageCard(() => pkg)),
+		})),
 	]
 })
 
-const ExportsSection = maoka.html.section(({ value }) => {
-	value.id = "exports"
+const ExportsSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("exports"))
 
 	return () => [
-		maoka.html.h2(() => () => "Exports"),
-		maoka.html.p(({ value }) => {
-			value.className = "section-intro"
-
-			return () =>
-				"The root module exposes one primary runtime namespace, one runtime constant namespace, and one top-level type namespace."
-		})(),
-		maoka.html.table(({ value }) => {
-			value.className = "exports-table"
-
-			return () => [
-				maoka.html.thead(() => () =>
-					maoka.html.tr(() => () => [
-						maoka.html.th(() => () => "Export")(),
-						maoka.html.th(() => () => "Kind")(),
-						maoka.html.th(() => () => "Import")(),
-						maoka.html.th(() => () => "Purpose")(),
-					])(),
-				)(),
-				maoka.html.tbody(() => () =>
-					exportsRows.map(row =>
-						maoka.html.tr(() => () => [
-							maoka.html.td(() => () => maoka.html.code(() => () => row.symbol)())(),
-							maoka.html.td(() => () => row.kind)(),
-							maoka.html.td(() => () => maoka.html.code(() => () => row.importLine)())(),
-							maoka.html.td(() => () => row.description)(),
-						])(),
-					),
-				)(),
-			]
-		})(),
+		PageSectionTitle(() => ({ text: "Exports" })),
+		SectionIntro(() => ({
+			text: "The root module exposes one primary runtime namespace, one runtime constant namespace, and one top-level type namespace.",
+		})),
+		ExportsTable(() => ({
+			children: [ExportsHead(), ExportsBody(() => ({ rows: exportsRows }))],
+		})),
 	]
 })
 
-const DefaultExportSection = maoka.html.section(({ value }) => {
-	value.id = "default-export"
+const DefaultExportSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("default-export"))
 
 	return () => [
-		maoka.html.h2(() => () => "Default export `maoka`"),
-		maoka.html.p(({ value }) => {
-			value.className = "section-intro"
-
-			return () =>
-				"`maoka` is the primary runtime namespace. Its members either create blueprints directly, provide pre-bound tagged blueprint factories, or attach built-in behavior through jabs."
-		})(),
-		maoka.html.div(({ value }) => {
-			value.className = "api-grid"
-
-			return () => defaultMembers.map(member => ApiMember(() => member))
-		})(),
-		maoka.html.h3(() => () => "maoka.jabs"),
-		maoka.html.div(({ value }) => {
-			value.className = "api-card"
-
-			return () => [
-				maoka.html.p(
-					() => () =>
-						"`maoka.jabs` groups the built-in jabs exported from the root module. Each member is a `Maoka.Jab` or a factory that returns a `Maoka.Jab`.",
-				)(),
+		PageSectionTitle(() => ({ text: "Default export `maoka`" })),
+		SectionIntro(() => ({
+			text: "`maoka` is the primary runtime namespace. Its members either create blueprints directly, provide pre-bound tagged blueprint factories, or attach built-in behavior through jabs.",
+		})),
+		ApiGrid(() => ({
+			children: defaultMembers.map(member => ApiMember(() => member)),
+		})),
+		SectionSubheading(() => ({ text: "maoka.jabs" })),
+		ApiCard(() => ({
+			children: [
+				TextParagraph(() => ({
+					text: "`maoka.jabs` groups the built-in jabs exported from the root module. Each member is a `Maoka.Jab` or a factory that returns a `Maoka.Jab`.",
+				})),
 				CodeBlock(() => ({
 					js: jabsExampleJs,
 					ts: jabsExampleTs,
 					noShadow: true,
 				})),
-			]
-		})(),
-		maoka.html.div(({ value }) => {
-			value.className = "api-grid"
-
-			return () => jabMembers.map(member => ApiMember(() => member))
-		})(),
+			],
+		})),
+		ApiGrid(() => ({
+			children: jabMembers.map(member => ApiMember(() => member)),
+		})),
 	]
 })
 
-const ConstantsSection = maoka.html.section(({ value }) => {
-	value.id = "maoka-constants"
+const ConstantsSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("maoka-constants"))
 
 	return () => [
-		maoka.html.h2(() => () => "Named export `MAOKA`"),
-		maoka.html.p(({ value }) => {
-			value.className = "section-intro"
-
-			return () =>
-				"`MAOKA` is a runtime namespace of tag constant arrays re-exported from `src/maoka.constants.js`. It is intended for introspection, tooling, and support code that needs to enumerate the built-in tagged component members."
-		})(),
-		maoka.html.div(({ value }) => {
-			value.className = "tag-grid"
-
-			return () => constantGroups.map(group => TagGroup(() => group))
-		})(),
+		PageSectionTitle(() => ({ text: "Named export `MAOKA`" })),
+		SectionIntro(() => ({
+			text: "`MAOKA` is a runtime namespace of tag constant arrays re-exported from `src/maoka.constants.js`. It is intended for introspection, tooling, and support code that needs to enumerate the built-in tagged component members.",
+		})),
+		TagGrid(() => ({
+			children: constantGroups.map(group => TagGroup(() => group)),
+		})),
 	]
 })
 
-const TypesSection = maoka.html.section(({ value }) => {
-	value.id = "types"
+const TypesSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("types"))
 
 	return () => [
-		maoka.html.h2(() => () => "Type reference"),
-		maoka.html.p(({ value }) => {
-			value.className = "section-intro"
-
-			return () =>
-				"The exported type surface is rooted in `type Maoka` and `namespace Maoka`. The following groups preserve the public declarations while presenting them in a readable form."
-		})(),
-		maoka.html.div(({ value }) => {
-			value.className = "type-grid"
-
-			return () => typeGroups.map(group => TypeGroup(() => group))
-		})(),
+		PageSectionTitle(() => ({ text: "Type reference" })),
+		SectionIntro(() => ({
+			text: "The exported type surface is rooted in `type Maoka` and `namespace Maoka`. The following groups preserve the public declarations while presenting them in a readable form.",
+		})),
+		TypeGrid(() => ({
+			children: typeGroups.map(group => TypeGroup(() => group)),
+		})),
 	]
 })
 
-const BehaviorSection = maoka.html.section(({ value }) => {
-	value.id = "behavior-notes"
+const BehaviorSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.setId("behavior-notes"))
 
 	return () => [
-		maoka.html.h2(() => () => "Usage and behavior notes"),
-		maoka.html.div(({ value }) => {
-			value.className = "api-card behavior-card"
-
-			return () => [
-				maoka.html.ol(({ value }) => {
-					value.className = "behavior-items"
-
-					return () =>
-						behaviorNotes.map(note => maoka.html.li(() => () => note)())
-				})(),
-			]
-		})(),
+		PageSectionTitle(() => ({ text: "Usage and behavior notes" })),
+		BehaviorCard(() => ({
+			children: [
+				BehaviorNoteList(() => ({ items: behaviorNotes })),
+			],
+		})),
 	]
 })
 
-const ApiMember = maoka.html.section(({ props, value }) => {
-	value.id = props().id
-	value.className = "api-card"
+const CardTitle = maoka.html.h3(({ props }) => () => props().text)
+
+const TextParagraph = maoka.html.p(({ props }) => () => props().text)
+
+const StrongText = maoka.html.strong(({ props }) => () => props().text)
+
+const StrongParagraph = maoka.html.p(({ props }) => () =>
+	StrongText(() => ({ text: props().text })),
+)
+
+const BehaviorItem = maoka.html.li(({ props }) => () => props().text)
+
+const BehaviorItems = maoka.html.ul(({ props, use }) => {
+	use(maoka.jabs.classes.set("behavior-items"))
+
+	return () =>
+		props().items.map(item => BehaviorItem(() => ({ key: item, text: item })))
+})
+
+const TagChip = maoka.html.code(({ props, use }) => {
+	use(maoka.jabs.classes.set("tag-chip"))
+
+	return () => props().tag
+})
+
+const TypeGroupEyebrow = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("eyebrow", "is-soft"))
+
+	return () => "Type group"
+})
+
+const SignatureHeading = maoka.html.p(({ props }) => () =>
+	StrongText(() => ({ text: props().text })),
+)
+
+const ApiMember = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.assignId(() => props().id))
+	use(maoka.jabs.classes.set("api-card"))
 
 	return () => [
-		maoka.html.h3(() => () => props().title),
+		CardTitle(() => ({ text: props().title })),
 		SignatureBlock(() => ({ signature: props().signature })),
-		...props().body.map(paragraph => maoka.html.p(() => () => paragraph)()),
+		...props().body.map(paragraph =>
+			TextParagraph(() => ({ key: paragraph, text: paragraph })),
+		),
 		UsageList(() => ({ items: props().usage })),
 		props().code
 			? CodeBlock(() => ({
@@ -925,56 +1200,56 @@ const ApiMember = maoka.html.section(({ props, value }) => {
 	]
 })
 
-const TagGroup = maoka.html.section(({ props, value }) => {
-	value.id = props().id
-	value.className = "tag-group"
+const TagGroup = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.assignId(() => props().id))
+	use(maoka.jabs.classes.set("tag-group"))
 
 	return () => [
-		maoka.html.h3(() => () => props().title),
+		CardTitle(() => ({ text: props().title })),
 		SignatureBlock(() => ({ signature: props().signature })),
-		maoka.html.p(() => () => props().body),
+		TextParagraph(() => ({ text: props().body })),
 		TagList(() => ({ tags: props().tags })),
 	]
 })
 
-const TypeGroup = maoka.html.section(({ props, value }) => {
-	value.id = props().id
-	value.className = "type-group"
+const TypeGroup = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.assignId(() => props().id))
+	use(maoka.jabs.classes.set("type-group"))
 
 	return () => [
-		maoka.html.p(({ value }) => {
-			value.className = "eyebrow is-soft"
-
-			return () => "Type group"
-		})(),
-		maoka.html.h3(() => () => props().title),
-		...props().body.map(paragraph => maoka.html.p(() => () => paragraph)()),
+		TypeGroupEyebrow(),
+		CardTitle(() => ({ text: props().title })),
+		...props().body.map(paragraph =>
+			TextParagraph(() => ({ key: paragraph, text: paragraph })),
+		),
 		CodeBlock(() => ({ ts: props().code, noShadow: true })),
 	]
 })
 
-const SubpackageCard = maoka.html.section(({ props, value }) => {
-	value.id = props().id
-	value.className = "api-card"
+const SubpackageCard = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.assignId(() => props().id))
+	use(maoka.jabs.classes.set("api-card"))
 
 	return () => [
-		maoka.html.h3(() => () => props().title),
+		CardTitle(() => ({ text: props().title })),
 		SignatureBlock(() => ({ signature: props().importLine })),
-		...props().body.map(paragraph => maoka.html.p(() => () => paragraph)()),
-		maoka.html.p(() => () => maoka.html.strong(() => () => "Runtime exports")())(),
+		...props().body.map(paragraph =>
+			TextParagraph(() => ({ key: paragraph, text: paragraph })),
+		),
+		StrongParagraph(() => ({ text: "Runtime exports" })),
 		UsageList(() => ({ items: props().runtime })),
-		maoka.html.p(() => () => maoka.html.strong(() => () => "Type exports")())(),
+		StrongParagraph(() => ({ text: "Type exports" })),
 		UsageList(() => ({ items: props().types })),
 		CodeBlock(() => ({ ts: props().code, noShadow: true })),
 	]
 })
 
-const SignatureBlock = maoka.html.div(({ props, value }) => {
+const SignatureBlock = maoka.html.div(({ props }) => {
 	return () =>
 		RainbowCard(() => ({
 			className: "signature-list",
 			children: [
-				maoka.html.p(() => () => maoka.html.strong(() => () => "Signature")())(),
+				SignatureHeading(() => ({ text: "Signature" })),
 				CodeBlock(() => ({ ts: props().signature, noShadow: true })),
 			],
 		}))
@@ -984,27 +1259,22 @@ const UsageList = maoka.html.div(({ props }) => {
 	return () =>
 		RainbowCard(() => ({
 			className: "behavior-list",
-			children: [
-				maoka.html.ul(({ value }) => {
-					value.className = "behavior-items"
-
-					return () => props().items.map(item => maoka.html.li(() => () => item)())
-				})(),
-			],
+			children: [BehaviorItems(() => ({ items: props().items }))],
 		}))
 })
 
-const TagList = maoka.html.div(({ props, value }) => {
-	value.className = "tag-list"
+const TagList = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("tag-list"))
 
 	return () =>
 		props().tags.map(tag =>
-			maoka.html.code(({ value }) => {
-				value.className = "tag-chip"
-
-				return () => tag
-			})(() => ({ key: tag })),
+			TagChip(() => ({ key: tag, tag })),
 		)
 })
 
-render(document.body, Page())
+render(
+	document.body,
+	DocsPageBoundary(() => ({
+		children: Page(),
+	})),
+)

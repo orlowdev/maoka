@@ -2,7 +2,7 @@
 
 import maoka from "../../index.js"
 import { createRoot } from "../../rendering/index.js"
-import { isComponent } from "../../src/maoka.impl.js"
+import { isComponent, markNode } from "../../src/maoka.impl.js"
 
 /**
  * @typedef {object} TestValue
@@ -26,6 +26,7 @@ export const createValue = tag => ({
 	text: "",
 	parent: null,
 	children: [],
+	attrs: new Map(),
 })
 
 /**
@@ -131,26 +132,27 @@ const scheduleRefresh = flush => flush
 
 const cancelRefresh = () => {}
 
-const createRootNode = (root, value) => ({
-	key: root.key,
-	value,
-	props: {},
-	props: () => ({ key: root.key }),
-	root,
-	render: () => root.children,
-	lastRenderResult: root.children,
-	parent: null,
-	children: root.children,
-	refresh$: () => root.refreshNode(root.children[0]),
-	lifecycleHandlers: {
-		afterMount: [],
-		beforeRefresh: [],
-		error: [],
-		beforeUnmount: [],
-		afterUnmount: [],
-	},
-	mounted: true,
-})
+const createRootNode = (root, value) =>
+	markNode({
+		key: root.key,
+		value,
+		props: {},
+		props: () => ({ key: root.key }),
+		root,
+		render: () => root.children,
+		lastRenderResult: root.children,
+		parent: null,
+		children: root.children,
+		refresh$: () => root.refreshNode(root.children[0]),
+		lifecycleHandlers: {
+			afterMount: [],
+			beforeRefresh: [],
+			error: [],
+			beforeUnmount: [],
+			afterUnmount: [],
+		},
+		mounted: true,
+	})
 
 const instantiateComponent = (component, root, parent) => {
 	return component(root, parent)

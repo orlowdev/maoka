@@ -1,9 +1,205 @@
 import { describe, expect, test } from "bun:test"
 
 import maoka from "../../index.js"
-import { render, renderJab, setup } from "../index.js"
+import maokaTest, { render, renderJab, setup } from "../index.js"
 
 describe("maoka test renderer", () => {
+	test("exposes test jabs", () => {
+		expect(maokaTest.jabs.ifInTest).toEqual(expect.any(Function))
+		expect(maokaTest.jabs.attributes.get).toEqual(expect.any(Function))
+		expect(maokaTest.jabs.classes.assign).toEqual(expect.any(Function))
+	})
+
+	test("ifInTest runs for test values and skips foreign values", () => {
+		let seenTag
+		const Good = maoka.create(({ use }) => {
+			seenTag = use(maokaTest.jabs.ifInTest(({ value }) => value.tag))
+
+			return () => null
+		})
+		const skipped = renderJab(
+			maokaTest.jabs.ifInTest(({ value }) => value.tag),
+			{ value: { noTag: true } },
+		)
+
+		render(Good())
+
+		expect(seenTag).toBe("root")
+		expect(skipped.result()).toBe(undefined)
+	})
+
+	test("test jabs set and read attributes, data attributes, aria, and id", () => {
+		const Probe = maoka.html.div(({ use }) => {
+			use(maokaTest.jabs.setId("hero"))
+			use(maokaTest.jabs.attributes.set("title", "Launch"))
+			use(maokaTest.jabs.dataAttributes.set("kind", "primary"))
+			use(maokaTest.jabs.aria.set("label", "Launch button"))
+
+			return () => "Launch"
+		})
+		const renderer = render(Probe())
+
+		expect(renderer.node.value.attrs).toEqual(
+			new Map([
+				["id", "hero"],
+				["title", "Launch"],
+				["data-kind", "primary"],
+				["aria-label", "Launch button"],
+			]),
+		)
+	})
+
+	test("test attribute getters initialize attrs on custom test values", () => {
+		const value = {
+			tag: "root",
+			text: "",
+			parent: null,
+			children: [],
+		}
+		const renderer = renderJab(maokaTest.jabs.attributes.get("title"), { value })
+
+		expect(renderer.result()).toBe(undefined)
+		expect(value.attrs).toBeInstanceOf(Map)
+		expect(value.attrs.size).toBe(0)
+	})
+
+	test("test class jabs manage classes", () => {
+		let hasBeta
+		const Probe = maoka.html.div(({ use }) => {
+			use(maokaTest.jabs.classes.set("alpha"))
+			use(maokaTest.jabs.classes.add("beta"))
+			use(maokaTest.jabs.classes.remove("alpha"))
+			hasBeta = use(maokaTest.jabs.classes.has("beta"))
+
+			return () => "Classy"
+		})
+		const renderer = render(Probe())
+
+		expect(renderer.node.value.attrs.get("class")).toBe("beta")
+		expect(hasBeta).toBe(true)
+	})
+
+	test("test assign jabs update only when computed values change", () => {
+		let title = "Idle"
+		let enabled = false
+		let renderCalls = 0
+		let refresh
+		const Probe = maoka.html.div(({ refresh$, use }) => {
+			refresh = refresh$
+			use(maokaTest.jabs.attributes.assign("title", () => title))
+			use(maokaTest.jabs.dataAttributes.assign("state", () => title))
+			use(maokaTest.jabs.aria.assign("label", () => title))
+			use(maokaTest.jabs.assignId(() => title.toLowerCase()))
+			use(
+				maokaTest.jabs.classes.assign(() =>
+					enabled ? "is-ready is-mounted" : "is-mounted",
+				),
+			)
+
+			return () => {
+				renderCalls++
+
+				return "Assign"
+			}
+		})
+		const renderer = render(Probe())
+		const initialAttrs = new Map(renderer.node.value.attrs)
+
+		expect(initialAttrs).toEqual(
+			new Map([
+				["title", "Idle"],
+				["data-state", "Idle"],
+				["aria-label", "Idle"],
+				["id", "idle"],
+				["class", "is-mounted"],
+			]),
+		)
+
+		refresh()
+		renderer.flush()
+		expect(renderer.node.value.attrs).toEqual(initialAttrs)
+		expect(renderCalls).toBe(1)
+
+		title = "Ready"
+		enabled = true
+		refresh()
+		renderer.flush()
+
+		expect(renderer.node.value.attrs).toEqual(
+			new Map([
+				["title", "Ready"],
+				["data-state", "Ready"],
+				["aria-label", "Ready"],
+				["id", "ready"],
+				["class", "is-ready is-mounted"],
+			]),
+		)
+		expect(renderCalls).toBe(1)
+	})
+
+	test("test attribute assign removes attributes for undefined values", () => {
+		let title = "Idle"
+		let refresh
+		const Probe = maoka.html.div(({ refresh$, use }) => {
+			refresh = refresh$
+			use(maokaTest.jabs.attributes.assign("title", () => title))
+
+			return () => "Assign"
+		})
+		const renderer = render(Probe())
+
+		expect(renderer.node.value.attrs.get("title")).toBe("Idle")
+
+		title = undefined
+		refresh()
+		renderer.flush()
+
+		expect(renderer.node.value.attrs.has("title")).toBe(false)
+	})
+
+	test("test classes.set clears class when called without tokens", () => {
+		const Probe = maoka.html.div(({ use, value }) => {
+			value.attrs = new Map([["class", "alpha beta"]])
+			use(maokaTest.jabs.classes.set())
+
+			return () => "Classy"
+		})
+		const renderer = render(Probe())
+
+		expect(renderer.node.value.attrs.has("class")).toBe(false)
+	})
+
+	test("test class toggle syncs across refreshes", () => {
+		let active = false
+		let refresh
+		const Probe = maoka.html.div(({ refresh$, use }) => {
+			refresh = refresh$
+			use(maokaTest.jabs.classes.toggle(() => active, "is-active"))
+
+			return () => "Toggle"
+		})
+		const renderer = render(Probe())
+
+		expect(renderer.node.value.attrs.has("class")).toBe(false)
+
+		active = true
+		refresh()
+		renderer.flush()
+		expect(renderer.node.value.attrs.get("class")).toBe("is-active")
+	})
+
+	test("test class jabs reject invalid class tokens", () => {
+		const Invalid = maoka.html.div(({ use }) => {
+			use(maokaTest.jabs.classes.add("not valid"))
+
+			return () => "Invalid"
+		})
+
+		expect(() => render(Invalid())).toThrow(
+			"Class name must not contain whitespace",
+		)
+	})
+
 	test("renders and refreshes components in an in-memory tree", () => {
 		let count = 0
 		const Count = maoka.html.div(

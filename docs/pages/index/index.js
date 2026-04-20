@@ -1,8 +1,13 @@
 import "./style.css"
 import maoka from "../../../index.js"
+import maokaDom from "../../../dom/index.js"
 import { render } from "../../../dom/index.js"
 import { CodeDemo } from "../../src/components/code-demo.js"
-import { DocsNav } from "../../src/components/docs-nav.js"
+import {
+	DocsArticle,
+	DocsLayout,
+	DocsPageBoundary,
+} from "../../src/components/docs-page.js"
 import { NotebookSheet } from "../../src/components/notebook-sheet.js"
 import { RainbowCard } from "../../src/components/rainbow-card.js"
 import { SiteFooter } from "../../src/components/site-footer.js"
@@ -49,8 +54,8 @@ const DiscounterDigit = maoka.html.div(({ props }) => {
 	return () => props().digit
 })
 
-const DiscounterButton = maoka.html.button(({ props, value }) => {
-	value.type = "button"
+const DiscounterButton = maoka.html.button(({ props, use, value }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
 	value.onclick = () => props().decrement()
 
 	return () => "−"
@@ -95,8 +100,8 @@ const DiscounterDigit = maoka.html.div<{ digit: number }>(({ props }) => {
 })
 
 const DiscounterButton = maoka.html.button<{ decrement: () => void }>(
-	({ props, value }) => {
-		value.type = "button"
+	({ props, use, value }) => {
+		use(maoka.jabs.attributes.set("type", "button"))
 		value.onclick = () => props().decrement()
 
 		return () => "−"
@@ -162,47 +167,13 @@ const runtimeFeatures = [
 	},
 ]
 
-const Page = maoka.create(() => () => [
-	maoka.html.main(({ value }) => {
-		value.className = "docs-layout"
-
-		return () => [
-			DocsNav(),
-			maoka.html.article(({ value }) => {
-				value.className = "demo-page"
-
-				return () => [
-					maoka.html.header(({ value }) => {
-						value.className = "demo-header"
-
-						return () => [
-							ThemeToggle(),
-							maoka.html.p(({ value }) => {
-								value.className = "eyebrow"
-
-								return () => "사할린"
-							})(),
-							maoka.html.h1(() => () => "Maoka"),
-							maoka.html.p(({ value }) => {
-								value.className = "lede"
-
-								return () =>
-									"A UI library for on-demand rendering of user interfaces."
-							})(),
-							maoka.html.div(({ value }) => {
-								value.className = "hero-actions"
-
-								return () => [
-									CtaLink(() => ({
-										href: "/api",
-										icon: "api",
-										label: "Read API",
-										secondary: true,
-									})),
-								]
-							})(),
-						]
-					})(),
+const Page = maoka.create(() =>
+	() =>
+		DocsLayout(() => ({
+			children: DocsArticle(() => ({
+				className: "demo-page",
+				children: [
+					PageHeader(),
 					CodeDemo(() => ({
 						compact: true,
 						js: helloExample,
@@ -215,26 +186,58 @@ const Page = maoka.create(() => () => [
 					Features(),
 					ApiCta(),
 					SiteFooter(),
-				]
-			})(),
-		]
-	})(),
+				],
+			})),
+		})),
+)
+
+const LandingTitle = maoka.html.h1(() => () => "Maoka")
+
+const CoreConceptsTitle = maoka.html.h2(() => () => "Core Concepts")
+
+const ExampleSectionTitle = maoka.html.h2(
+	() => () => "The Infamous Counter Example",
+)
+
+const ApiCtaTitle = maoka.html.h2(() => () => "See the API surface")
+
+const ApiCtaBody = maoka.html.p(
+	() => () =>
+		"Types, renderers, test tools, lifecycle hooks, and the exact places where the weirdness becomes useful.",
+)
+
+const InstallTitle = maoka.html.h2(() => () => "Install")
+
+const InstallBody = maoka.html.p(
+	() => () =>
+		"Maoka is written in JavaScript and ships with types included, so you can hop onto the adventure right away.",
+)
+
+const PhilosophyLineTitle = maoka.html.h3(({ props }) => () => props().text)
+
+const PhilosophyLineBody = maoka.html.p(({ props }) => () => props().text)
+
+const PhilosophyLineText = maoka.html.div(({ props }) => () => [
+	PhilosophyLineTitle(() => ({ text: props().title })),
+	PhilosophyLineBody(() => ({ text: props().body })),
 ])
 
-const Philosophy = maoka.html.section(({ value }) => {
-	value.className = "landing-section philosophy-section"
+const PhilosophyLines = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("philosophy-lines"))
+
+	return () => props().children
+})
+
+const InstallCommandLabel = maoka.html.span(({ props }) => () => props().text)
+
+const Philosophy = maoka.html.section(({ use }) => {
+	use(maoka.jabs.classes.set("landing-section", "philosophy-section"))
 
 	return () => [
-		maoka.html.p(({ value }) => {
-			value.className = "eyebrow"
-
-			return () => "Philosophy"
-		})(),
-		maoka.html.h2(() => () => "Core Concepts"),
-		maoka.html.div(({ value }) => {
-			value.className = "philosophy-lines"
-
-			return () => [
+		SectionEyebrow(() => ({ text: "Philosophy" })),
+		CoreConceptsTitle(),
+		PhilosophyLines(() => ({
+			children: [
 				PhilosophyLine(() => ({
 					index: "01",
 					title: "Creating is separate from being",
@@ -255,26 +258,18 @@ const Philosophy = maoka.html.section(({ value }) => {
 					title: "Value is the body, Node is the soul",
 					body: "Most of the time, working really hard does not make you a billionaire. In the same way, Maoka components do not become billionaires if they were destined to be divs. This perpetual binding happens in the Nodes that Maoka components create. You can't reach them, you can't prove they are there, but no matter what body they are rendered as, they live within the lifelines the Creator predefines.",
 				})),
-			]
-		})(),
+			],
+		})),
 	]
 })
 
-const ExampleSection = maoka.html.section(({ value }) => {
-	value.className = "landing-section example-section"
+const ExampleSection = maoka.html.section(({ use }) => {
+	use(maoka.jabs.classes.set("landing-section", "example-section"))
 
 	return () => [
-		maoka.html.p(({ value }) => {
-			value.className = "eyebrow"
-
-			return () => "Maoka by Example"
-		})(),
-		maoka.html.h2(() => () => "The Infamous Counter Example"),
-		maoka.html.p(({ value }) => {
-			value.className = "lede example-lede"
-
-			return () => "But it actually discounts."
-		})(),
+		SectionEyebrow(() => ({ text: "Maoka by Example" })),
+		ExampleSectionTitle(),
+		ExampleLead(),
 		CodeDemo(() => ({
 			js: discounterExample,
 			ts: discounterExampleTs,
@@ -283,29 +278,25 @@ const ExampleSection = maoka.html.section(({ value }) => {
 	]
 })
 
-const PhilosophyLine = maoka.html.div(({ props, value }) => {
-	value.className = "philosophy-line"
+const PhilosophyLine = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("philosophy-line"))
 
 	return () => [
-		maoka.html.span(({ value }) => {
-			value.className = "philosophy-index"
-
-			return () => props().index
-		})(),
-		maoka.html.div(() => () => [
-			maoka.html.h3(() => () => props().title),
-			maoka.html.p(() => () => props().body),
-		])(),
+		PhilosophyIndex(() => ({ text: props().index })),
+		PhilosophyLineText(() => ({
+			title: props().title,
+			body: props().body,
+		})),
 	]
 })
 
-const InstallCta = maoka.html.section(({ lifecycle, refresh$, value }) => {
+const InstallCta = maoka.html.section(({ lifecycle, refresh$, use }) => {
 	const command = "npm i maoka"
 	let toastVisible = false
 	let toastTimeout = null
 
-	value.id = "install"
-	value.className = "landing-section install-section"
+	use(maoka.jabs.setId("install"))
+	use(maoka.jabs.classes.set("landing-section", "install-section"))
 
 	const showToast = () => {
 		toastVisible = true
@@ -325,115 +316,98 @@ const InstallCta = maoka.html.section(({ lifecycle, refresh$, value }) => {
 	})
 
 	return () => [
-		maoka.html.div(({ value }) => {
-			value.className = "install-copy"
-
-			return () => [
-				maoka.html.p(({ value }) => {
-					value.className = "eyebrow"
-
-					return () => "Поехали!"
-				})(),
-				maoka.html.h2(() => () => "Install"),
-				maoka.html.p(
-					() => () =>
-						"Maoka is written in JavaScript and ships with types included, so you can hop onto the adventure right away.",
-				),
-			]
-		})(),
-		maoka.html.div(({ value }) => {
-			value.className = "install-action"
-
-			return () => [
-				InstallCommand(() => ({ command, showToast })),
-				toastVisible ? InstallToast() : null,
-			]
-		})(),
+		InstallCopy(),
+		InstallAction(() => ({ command, showToast, toastVisible })),
 	]
 })
 
-const InstallCommand = maoka.html.button(({ props, value }) => {
-	value.type = "button"
-	value.className = "install-command"
-	value.setAttribute("aria-label", "Copy install command")
-	value.onclick = async () => {
-		await copyText(props().command)
-		props().showToast()
-	}
+const InstallCommand = maoka.html.button(({ props, use }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
+	use(maoka.jabs.classes.set("install-command"))
+	use(maoka.jabs.aria.set("label", "Copy install command"))
+	use(
+		maokaDom.jabs.ifInDOM(({ value, lifecycle }) => {
+			const doc = value.ownerDocument
+			const win = doc?.defaultView
 
-	return () => [maoka.html.span(() => () => props().command)]
+			if (!doc || !win) return
+
+			const browser = {
+				document: doc,
+				window: win,
+			}
+			const sync = () => {
+				value.onclick = async () => {
+					await copyText(browser, props().command)
+					props().showToast()
+				}
+			}
+
+			sync()
+			lifecycle.beforeRefresh(() => {
+				sync()
+
+				return false
+			})
+		}),
+	)
+
+	return () => [InstallCommandLabel(() => ({ text: props().command }))]
 })
 
-const InstallToast = maoka.html.div(({ value }) => {
-	value.className = "install-toast"
-	value.setAttribute("role", "status")
-	value.setAttribute("aria-live", "polite")
+const InstallToast = maoka.html.div(({ use }) => {
+	use(maoka.jabs.classes.set("install-toast"))
+	use(maoka.jabs.attributes.set("role", "status"))
+	use(maoka.jabs.aria.set("live", "polite"))
 
 	return () => "Copied. So lazy of you!"
 })
 
-const copyText = async text => {
-	if (globalThis.navigator?.clipboard?.writeText) {
+const copyText = async (dom, text) => {
+	if (dom?.window.navigator?.clipboard?.writeText) {
 		try {
-			await globalThis.navigator.clipboard.writeText(text)
+			await dom.window.navigator.clipboard.writeText(text)
 			return
 		} catch {}
 	}
 
-	const textarea = document.createElement("textarea")
+	if (!dom) return
+
+	const textarea = dom.document.createElement("textarea")
 
 	textarea.value = text
 	textarea.setAttribute("readonly", "")
 	textarea.style.position = "fixed"
 	textarea.style.opacity = "0"
-	document.body.append(textarea)
+	dom.document.body.append(textarea)
 	textarea.select()
-	document.execCommand("copy")
+	dom.document.execCommand("copy")
 	textarea.remove()
 }
 
-const Features = maoka.html.section(({ value }) => {
-	value.className = "landing-section features-section"
+const Features = maoka.html.section(({ use }) => {
+	use(maoka.jabs.classes.set("landing-section", "features-section"))
 
 	return () => [
 		NotebookSheet(() => ({
 			variant: "note",
 			className: "feature-stage",
 			children: [
-				maoka.html.p(({ value }) => {
-					value.className = "eyebrow feature-eyebrow"
-
-					return () => "Runtime features"
-				})(),
-				maoka.html.h2(({ value }) => {
-					value.className = "feature-title"
-
-					return () => "What Maoka actually does"
-				})(),
-				maoka.html.div(({ value }) => {
-					value.className = "feature-grid"
-
-					return () => runtimeFeatures.map(feature => Feature(() => feature))
-				})(),
+				FeaturesEyebrow(),
+				FeaturesTitle(),
+				FeatureGrid(),
 			],
 		})),
 	]
 })
 
-const ApiCta = maoka.html.section(({ value }) => {
-	value.className = "landing-section api-callout"
+const ApiCta = maoka.html.section(({ use }) => {
+	use(maoka.jabs.classes.set("landing-section", "api-callout"))
 
 	return () => [
-		maoka.html.p(({ value }) => {
-			value.className = "eyebrow"
-
-			return () => "Next transmission"
-		})(),
-		maoka.html.h2(() => () => "See the API surface"),
-		maoka.html.p(
-			() => () =>
-				"Types, renderers, test tools, lifecycle hooks, and the exact places where the weirdness becomes useful.",
-		),
+		SectionEyebrow(() => ({ text: "Next transmission" })),
+		ApiCtaTitle(),
+		ApiCtaBody(),
 		CtaLink(() => ({
 			href: "/api",
 			icon: "api",
@@ -447,11 +421,7 @@ const Feature = maoka.create(({ props }) => {
 		RainbowCard(() => ({
 			className: ["feature-card", props().slot, props().tilt].filter(Boolean).join(" "),
 			children: [
-				maoka.html.div(({ value }) => {
-					value.className = "feature-card-title"
-
-					return () => props().title
-				})(),
+				FeatureCardTitle(() => ({ text: props().title })),
 				FeatureBody(() => ({
 					body: props().body,
 					highlight: props().highlight,
@@ -475,29 +445,33 @@ const FeatureBody = maoka.html.p(({ props }) => {
 	}
 })
 
-const FeatureHighlight = maoka.html.mark(({ props, value }) => {
-	value.className = "feature-highlight"
+const FeatureHighlight = maoka.html.mark(({ props, use }) => {
+	use(maoka.jabs.classes.set("feature-highlight"))
 
 	return () => props().text
 })
 
-const CtaLink = maoka.html.a(({ props, value }) => {
-	return () => {
-		value.href = props().href
-		value.className = props().secondary ? "cta-link is-secondary" : "cta-link"
+const CtaLink = maoka.html.a(({ props, use }) => {
+	use(maoka.jabs.attributes.assign("href", () => props().href))
+	use(
+		maoka.jabs.classes.assign(() =>
+			props().secondary ? "cta-link is-secondary" : "cta-link",
+		),
+	)
 
+	return () => {
 		return [
 			CtaIcon(() => ({ icon: props().icon })),
-			maoka.html.span(() => () => props().label)(),
+			CtaLabel(() => ({ text: props().label })),
 		]
 	}
 })
 
-const CtaIcon = maoka.svg.svg(({ props, value }) => {
-	value.setAttribute("aria-hidden", "true")
-	value.setAttribute("class", "cta-icon")
-	value.setAttribute("fill", "none")
-	value.setAttribute("viewBox", "0 0 64 64")
+const CtaIcon = maoka.svg.svg(({ props, use }) => {
+	use(maoka.jabs.aria.set("hidden", "true"))
+	use(maoka.jabs.classes.set("cta-icon"))
+	use(maoka.jabs.attributes.set("fill", "none"))
+	use(maoka.jabs.attributes.set("viewBox", "0 0 64 64"))
 
 	return () => (props().icon === "pacifier" ? PacifierCatIcon() : ApiCatIcon())
 })
@@ -602,26 +576,146 @@ const CatFace = () => [
 	})),
 ]
 
-const SvgPath = maoka.svg.path(({ props, value }) => {
+const SvgPath = maoka.svg.path(({ props, use }) => {
+	use(maoka.jabs.classes.assign(() => props().className ?? ""))
+	use(maoka.jabs.attributes.assign("d", () => props().d))
+	use(maoka.jabs.attributes.assign("fill", () => props().fill ?? "none"))
+	use(maoka.jabs.attributes.set("stroke-linecap", "round"))
+	use(maoka.jabs.attributes.set("stroke-linejoin", "round"))
+	use(
+		maoka.jabs.attributes.assign(
+			"stroke-width",
+			() => props().strokeWidth ?? "2.4",
+		),
+	)
+
 	return () => {
-		if (props().className) value.setAttribute("class", props().className)
-		value.setAttribute("d", props().d)
-		value.setAttribute("fill", props().fill ?? "none")
-		value.setAttribute("stroke-linecap", "round")
-		value.setAttribute("stroke-linejoin", "round")
-		value.setAttribute("stroke-width", props().strokeWidth ?? "2.4")
 	}
 })
 
-const SvgCircle = maoka.svg.circle(({ props, value }) => {
+const SvgCircle = maoka.svg.circle(({ props, use }) => {
+	use(maoka.jabs.classes.assign(() => props().className ?? ""))
+	use(maoka.jabs.attributes.assign("cx", () => props().cx))
+	use(maoka.jabs.attributes.assign("cy", () => props().cy))
+	use(maoka.jabs.attributes.assign("fill", () => props().fill ?? "none"))
+	use(maoka.jabs.attributes.assign("r", () => props().r))
+	use(
+		maoka.jabs.attributes.assign(
+			"stroke-width",
+			() => props().strokeWidth ?? "2.4",
+		),
+	)
+
 	return () => {
-		if (props().className) value.setAttribute("class", props().className)
-		value.setAttribute("cx", props().cx)
-		value.setAttribute("cy", props().cy)
-		value.setAttribute("fill", props().fill ?? "none")
-		value.setAttribute("r", props().r)
-		value.setAttribute("stroke-width", props().strokeWidth ?? "2.4")
 	}
 })
 
-render(document.body, Page())
+const HeroEyebrow = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("eyebrow"))
+
+	return () => "사할린"
+})
+
+const HeroLead = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("lede"))
+
+	return () => "A UI library for on-demand rendering of user interfaces."
+})
+
+const HeroActions = maoka.html.div(({ use }) => {
+	use(maoka.jabs.classes.set("hero-actions"))
+
+	return () => [
+		CtaLink(() => ({
+			href: "/api",
+			icon: "api",
+			label: "Read API",
+			secondary: true,
+		})),
+	]
+})
+
+const SectionEyebrow = maoka.html.p(({ props, use }) => {
+	use(maoka.jabs.classes.set("eyebrow"))
+
+	return () => props().text
+})
+
+const ExampleLead = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("lede", "example-lede"))
+
+	return () => "But it actually discounts."
+})
+
+const PhilosophyIndex = maoka.html.span(({ props, use }) => {
+	use(maoka.jabs.classes.set("philosophy-index"))
+
+	return () => props().text
+})
+
+const InstallCopy = maoka.html.div(({ use }) => {
+	use(maoka.jabs.classes.set("install-copy"))
+
+	return () => [
+		SectionEyebrow(() => ({ text: "Поехали!" })),
+		InstallTitle(),
+		InstallBody(),
+	]
+})
+
+const InstallAction = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("install-action"))
+
+	return () => [
+		InstallCommand(() => ({
+			command: props().command,
+			showToast: props().showToast,
+		})),
+		props().toastVisible ? InstallToast() : null,
+	]
+})
+
+const FeaturesEyebrow = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("eyebrow", "feature-eyebrow"))
+
+	return () => "Runtime features"
+})
+
+const FeaturesTitle = maoka.html.h2(({ use }) => {
+	use(maoka.jabs.classes.set("feature-title"))
+
+	return () => "What Maoka actually does"
+})
+
+const FeatureGrid = maoka.html.div(({ use }) => {
+	use(maoka.jabs.classes.set("feature-grid"))
+
+	return () => runtimeFeatures.map(feature => Feature(() => feature))
+})
+
+const FeatureCardTitle = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("feature-card-title"))
+
+	return () => props().text
+})
+
+const CtaLabel = maoka.html.span(({ props }) => () => props().text)
+
+const PageHeader = maoka.html.header(({ use }) => {
+	use(maoka.jabs.classes.set("demo-header"))
+
+	return () => [
+		ThemeToggle(),
+		HeroEyebrow(),
+		LandingTitle(),
+		HeroLead(),
+		HeroActions(),
+	]
+})
+
+render(
+	document.body,
+	DocsPageBoundary(() => ({
+		children: Page(),
+	})),
+)

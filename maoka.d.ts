@@ -1,3 +1,7 @@
+import type { MaokaDom } from "./dom/maoka-dom.d.ts"
+import type { MaokaString } from "./string/maoka-string.d.ts"
+import type { MaokaTest } from "./test/maoka-test.d.ts"
+
 export type Maoka = {
 	create: Maoka.Create
 	pure: Maoka.Pure
@@ -5,6 +9,7 @@ export type Maoka = {
 	svg: Record<Maoka.SvgTag, Maoka.TaggedComponent>
 	math: Record<Maoka.MathMlTag, Maoka.TaggedComponent>
 	jabs: Maoka.Jabs
+	guards: Maoka.Guards
 }
 
 declare const maoka: Maoka
@@ -38,12 +43,98 @@ export namespace Maoka {
 		jab: Jab<$Type, $Props, $Return>,
 	) => $Return
 
+	type AttributeGet =
+		& MaokaDom.AttributeGet
+		& MaokaString.AttributeGet
+		& MaokaTest.AttributeGet
+
+	type AttributeSet =
+		& MaokaDom.AttributeSet
+		& MaokaString.AttributeSet
+		& MaokaTest.AttributeSet
+
+	type AttributeAssign =
+		& MaokaDom.AttributeAssign
+		& MaokaString.AttributeAssign
+		& MaokaTest.AttributeAssign
+
+	type ClassesSet =
+		& MaokaDom.ClassesSet
+		& MaokaString.ClassesSet
+		& MaokaTest.ClassesSet
+
+	type ClassesAdd =
+		& MaokaDom.ClassesAdd
+		& MaokaString.ClassesAdd
+		& MaokaTest.ClassesAdd
+
+	type ClassesRemove =
+		& MaokaDom.ClassesRemove
+		& MaokaString.ClassesRemove
+		& MaokaTest.ClassesRemove
+
+	type ClassesHas =
+		& MaokaDom.ClassesHas
+		& MaokaString.ClassesHas
+		& MaokaTest.ClassesHas
+
+	type ClassesAssign =
+		& MaokaDom.ClassesAssign
+		& MaokaString.ClassesAssign
+		& MaokaTest.ClassesAssign
+
+	type ClassesToggle =
+		& MaokaDom.ClassesToggle
+		& MaokaString.ClassesToggle
+		& MaokaTest.ClassesToggle
+
+	type SetId =
+		& MaokaDom.SetId
+		& MaokaString.SetId
+		& MaokaTest.SetId
+
+	type AssignId =
+		& MaokaDom.AssignId
+		& MaokaString.AssignId
+		& MaokaTest.AssignId
+
 	type Jabs = {
 		noRefresh: Jab
 		shouldComponentRefresh: <$Props extends BaseProps = NoProps>(
 			compare: (prevProps: $Props, nextProps: $Props) => boolean,
 		) => Jab<any, $Props>
 		errorBoundary: (handler: (error: Error) => void) => Jab
+		attributes: {
+			get: AttributeGet
+			set: AttributeSet
+			assign: AttributeAssign
+		}
+		classes: {
+			set: ClassesSet
+			add: ClassesAdd
+			remove: ClassesRemove
+			has: ClassesHas
+			toggle: ClassesToggle
+			assign: ClassesAssign
+		}
+		dataAttributes: {
+			get: AttributeGet
+			set: AttributeSet
+			assign: AttributeAssign
+		}
+		aria: {
+			get: AttributeGet
+			set: AttributeSet
+			assign: AttributeAssign
+		}
+		setId: SetId
+		assignId: AssignId
+	}
+
+	type Guards = {
+		isComponent: (value: unknown) => value is Component<any, any>
+		isBlueprint: (value: unknown) => value is Blueprint<any>
+		isNode: (value: unknown) => value is Node<any, any>
 	}
 
 	type Refresh$ = () => void

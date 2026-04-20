@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
 import maoka from "../../index.js"
+import { renderJab } from "../../test/index.js"
 import maokaDom, { render } from "../index.js"
 
 const originalRequestAnimationFrame = globalThis.requestAnimationFrame
@@ -38,6 +39,9 @@ class FakeElement {
 		this.parentNode = null
 		this.nodeType = 1
 		this._textContent = ""
+		this._attrs = new Map()
+		this._setAttributeCalls = 0
+		this._removeAttributeCalls = 0
 	}
 
 	get children() {
@@ -55,6 +59,40 @@ class FakeElement {
 
 		this.childNodes = []
 		this._textContent = textContent
+	}
+
+	get className() {
+		return this.getAttribute("class") ?? ""
+	}
+
+	set className(className) {
+		this.setAttribute("class", className)
+	}
+
+	get id() {
+		return this.getAttribute("id") ?? ""
+	}
+
+	set id(id) {
+		this.setAttribute("id", id)
+	}
+
+	getAttribute(name) {
+		return this._attrs.get(name) ?? null
+	}
+
+	setAttribute(name, value) {
+		this._setAttributeCalls++
+		this._attrs.set(name, String(value))
+	}
+
+	removeAttribute(name) {
+		this._removeAttributeCalls++
+		this._attrs.delete(name)
+	}
+
+	hasAttribute(name) {
+		return this._attrs.has(name)
 	}
 
 	appendChild(child) {
@@ -119,6 +157,35 @@ const isAncestorOf = (ancestor, child) => {
 }
 
 describe("maokaDom.render", () => {
+	test("exposes a dom node guard", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		const App = maoka.html.button(() => () => "Hello")
+		const root = render(container, App())
+		const node = root.children[0]
+
+		expect(maokaDom.guards.isDomNode(node)).toBe(true)
+		expect(maokaDom.guards.isDomNode(node.parent)).toBe(true)
+		expect(maokaDom.guards.isDomNode(root)).toBe(false)
+		expect(maokaDom.guards.isDomNode({ value: { nodeType: 1 } })).toBe(false)
+	})
+
+	test("exposes a dom value guard", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		const root = render(container, maoka.html.button(() => () => "Hello")())
+		const node = root.children[0]
+
+		expect(maokaDom.guards.isDomValue(node.value)).toBe(true)
+		expect(maokaDom.guards.isDomValue(container)).toBe(true)
+		expect(maokaDom.guards.isDomValue(root)).toBe(false)
+		expect(maokaDom.guards.isDomValue({ nodeType: 1 })).toBe(false)
+	})
+
 	test("ifInDOM runs for any DOM element", () => {
 		globalThis.Element = FakeElement
 		globalThis.HTMLElement = FakeHTMLElement
@@ -164,6 +231,227 @@ describe("maokaDom.render", () => {
 		render(container, Probe())
 
 		expect(result).toBe("button")
+	})
+
+	test("ifInDOM is safe outside browser globals", () => {
+		globalThis.Element = undefined
+		globalThis.HTMLElement = undefined
+
+		let called = false
+		const probe = renderJab(
+			maokaDom.jabs.ifInDOM(() => {
+				called = true
+			}),
+		)
+
+		expect(probe.result()).toBe(undefined)
+		expect(called).toBe(false)
+	})
+
+	test("dom jabs set and read attributes, data attributes, aria, and id", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		const observed = {}
+		const Probe = maoka.html.button(({ use }) => {
+			use(maokaDom.jabs.setId("hero"))
+			use(maokaDom.jabs.attributes.set("title", "Launch"))
+			use(maokaDom.jabs.dataAttributes.set("kind", "primary"))
+			use(maokaDom.jabs.aria.set("label", "Launch button"))
+
+			observed.id = use(maokaDom.jabs.attributes.get("id"))
+			observed.title = use(maokaDom.jabs.attributes.get("title"))
+			observed.kind = use(maokaDom.jabs.dataAttributes.get("kind"))
+			observed.label = use(maokaDom.jabs.aria.get("label"))
+
+			return () => "Launch"
+		})
+
+		render(container, Probe())
+
+		const button = container.children[0]
+
+		expect(button.getAttribute("id")).toBe("hero")
+		expect(button.getAttribute("title")).toBe("Launch")
+		expect(button.getAttribute("data-kind")).toBe("primary")
+		expect(button.getAttribute("aria-label")).toBe("Launch button")
+		expect(observed).toEqual({
+			id: "hero",
+			title: "Launch",
+			kind: "primary",
+			label: "Launch button",
+		})
+	})
+
+	test("dom class jabs manage classes", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		let hasBeta
+		const Probe = maoka.html.div(({ use }) => {
+			use(maokaDom.jabs.classes.set("alpha"))
+			use(maokaDom.jabs.classes.add("beta"))
+			use(maokaDom.jabs.classes.remove("alpha"))
+			hasBeta = use(maokaDom.jabs.classes.has("beta"))
+
+			return () => "Classy"
+		})
+
+		render(container, Probe())
+
+		expect(container.children[0].getAttribute("class")).toBe("beta")
+		expect(hasBeta).toBe(true)
+	})
+
+	test("dom classes.set clears class when called without tokens", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		const Probe = maoka.html.div(({ use, value }) => {
+			value.setAttribute("class", "alpha beta")
+			use(maokaDom.jabs.classes.set())
+
+			return () => "Classy"
+		})
+
+		render(container, Probe())
+
+		expect(container.children[0].hasAttribute("class")).toBe(false)
+	})
+
+	test("dom assign jabs update only when computed values change", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		let title = "Idle"
+		let enabled = false
+		let refresh
+		let renderCalls = 0
+		const Probe = maoka.html.div(({ refresh$, use }) => {
+			refresh = refresh$
+			use(maokaDom.jabs.attributes.assign("title", () => title))
+			use(maokaDom.jabs.dataAttributes.assign("state", () => title))
+			use(maokaDom.jabs.aria.assign("label", () => title))
+			use(maokaDom.jabs.assignId(() => title.toLowerCase()))
+			use(
+				maokaDom.jabs.classes.assign(() =>
+					enabled ? "is-ready is-mounted" : "is-mounted",
+				),
+			)
+
+			return () => {
+				renderCalls++
+
+				return "Assign"
+			}
+		})
+		const root = render(container, Probe())
+		const node = root.children[0]
+
+		expect(node.value.getAttribute("title")).toBe("Idle")
+		expect(node.value.getAttribute("data-state")).toBe("Idle")
+		expect(node.value.getAttribute("aria-label")).toBe("Idle")
+		expect(node.value.getAttribute("id")).toBe("idle")
+		expect(node.value.getAttribute("class")).toBe("is-mounted")
+
+		const initialSetCalls = node.value._setAttributeCalls
+		const initialRemoveCalls = node.value._removeAttributeCalls
+		const initialRenderCalls = renderCalls
+
+		refresh()
+		root.flushRefreshQueue()
+
+		expect(node.value._setAttributeCalls).toBe(initialSetCalls)
+		expect(node.value._removeAttributeCalls).toBe(initialRemoveCalls)
+		expect(renderCalls).toBe(initialRenderCalls)
+
+		title = "Ready"
+		enabled = true
+		refresh()
+		root.flushRefreshQueue()
+
+		expect(node.value.getAttribute("title")).toBe("Ready")
+		expect(node.value.getAttribute("data-state")).toBe("Ready")
+		expect(node.value.getAttribute("aria-label")).toBe("Ready")
+		expect(node.value.getAttribute("id")).toBe("ready")
+		expect(node.value.getAttribute("class")).toBe("is-ready is-mounted")
+		expect(node.value._setAttributeCalls).toBeGreaterThan(initialSetCalls)
+		expect(renderCalls).toBe(initialRenderCalls)
+	})
+
+	test("dom attribute assign removes attributes for undefined values", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		let title = "Idle"
+		let refresh
+		const Probe = maoka.html.div(({ refresh$, use }) => {
+			refresh = refresh$
+			use(maokaDom.jabs.attributes.assign("title", () => title))
+
+			return () => "Assign"
+		})
+		const root = render(container, Probe())
+		const node = root.children[0]
+
+		expect(node.value.getAttribute("title")).toBe("Idle")
+
+		title = undefined
+		refresh()
+		root.flushRefreshQueue()
+
+		expect(node.value.getAttribute("title")).toBe(null)
+		expect(node.value._removeAttributeCalls).toBeGreaterThan(0)
+	})
+
+	test("dom class toggle syncs across refreshes", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		let active = false
+		let refresh
+		const Probe = maoka.html.div(({ refresh$, use }) => {
+			refresh = refresh$
+			use(maokaDom.jabs.classes.toggle(() => active, "is-active"))
+
+			return () => "Toggle"
+		})
+		const root = render(container, Probe())
+		const node = root.children[0]
+
+		expect(node.value.getAttribute("class")).toBe(null)
+
+		active = true
+		refresh()
+		root.flushRefreshQueue()
+		expect(node.value.getAttribute("class")).toBe("is-active")
+
+		active = false
+		refresh()
+		root.flushRefreshQueue()
+		expect(node.value.getAttribute("class")).toBe(null)
+	})
+
+	test("dom class jabs reject invalid class tokens", () => {
+		globalThis.Element = FakeElement
+		globalThis.HTMLElement = FakeHTMLElement
+
+		const container = createContainer()
+		const Invalid = maoka.html.div(({ use }) => {
+			use(maokaDom.jabs.classes.add("not valid"))
+
+			return () => "Invalid"
+		})
+
+		expect(() => render(container, Invalid())).toThrow(
+			"Class name must not contain whitespace",
+		)
 	})
 
 	test("renders component templates into a DOM container", () => {

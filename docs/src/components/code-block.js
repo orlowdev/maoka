@@ -1,4 +1,5 @@
 import maoka from "../../../index.js"
+import maokaDom from "../../../dom/index.js"
 import "./code-block.css"
 
 let selectedLanguage = "js"
@@ -28,8 +29,8 @@ const bracketPairs = {
 const closingBrackets = new Set(Object.values(bracketPairs))
 
 export const CodeBlock = maoka.html.section(
-	({ lifecycle, props, refresh$, value }) => {
-		value.className = "code-block"
+	({ lifecycle, props, refresh$, use }) => {
+		use(maoka.jabs.classes.set("code-block"))
 
 		lifecycle.afterMount(() => {
 			refreshSubscribers.add(refresh$)
@@ -62,8 +63,8 @@ export const CodeBlock = maoka.html.section(
 	},
 )
 
-const LanguageTabs = maoka.html.div(({ props, value }) => {
-	value.className = "code-tabs"
+const LanguageTabs = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("code-tabs"))
 
 	return () => {
 		const p = props()
@@ -89,34 +90,46 @@ const LanguageTabs = maoka.html.div(({ props, value }) => {
 	}
 })
 
-const LanguageTab = maoka.html.button(({ props, value }) => {
-	value.type = "button"
-	value.onclick = () => props().select(props().language)
+const LanguageTab = maoka.html.button(({ props, use }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
+	use(
+		maoka.jabs.classes.assign(() =>
+			["code-tab", `is-${props().language}`, props().active ? "is-active" : ""]
+				.filter(Boolean)
+				.join(" "),
+		),
+	)
+	use(
+		maokaDom.jabs.ifInDOM(({ value, lifecycle }) => {
+			const sync = () => {
+				value.onclick = () => props().select(props().language)
+			}
 
-	return () => {
-		value.className = [
-			"code-tab",
-			`is-${props().language}`,
-			props().active ? "is-active" : "",
-		]
-			.filter(Boolean)
-			.join(" ")
+			sync()
+			lifecycle.beforeRefresh(() => {
+				sync()
 
-		return props().label
-	}
+				return false
+			})
+		}),
+	)
+
+	return () => props().label
 })
 
-const CodePanel = maoka.html.div(({ props, value }) => {
+const CodePanel = maoka.html.div(({ props, use }) => {
+	use(
+		maoka.jabs.classes.assign(() => {
+			const p = props()
+
+			return ["code-panel", `is-${p.language}`, p.noShadow ? "is-flat" : ""]
+				.filter(Boolean)
+				.join(" ")
+		}),
+	)
+
 	return () => {
 		const p = props()
-
-		value.className = [
-			"code-panel",
-			`is-${p.language}`,
-			p.noShadow ? "is-flat" : "",
-		]
-			.filter(Boolean)
-			.join(" ")
 
 		return [Pre(() => ({ code: p.code }))]
 	}
@@ -133,11 +146,11 @@ const Code = maoka.html.code(({ props }) => {
 		)
 })
 
-const CodeLine = maoka.html.span(({ props, value }) => {
+const CodeLine = maoka.html.span(({ props, use }) => {
+	use(maoka.jabs.classes.assign(() => getLineClassName(props().line)))
+
 	return () => {
 		const line = props().line
-
-		value.className = getLineClassName(line)
 
 		return tokenize(line.code).map((token, index) =>
 			Token(() => ({ key: index, token })),
@@ -145,14 +158,10 @@ const CodeLine = maoka.html.span(({ props, value }) => {
 	}
 })
 
-const Token = maoka.html.span(({ props, value }) => {
-	return () => {
-		const { token } = props()
+const Token = maoka.html.span(({ props, use }) => {
+	use(maoka.jabs.classes.assign(() => props().token.className))
 
-		value.className = token.className
-
-		return token.value
-	}
+	return () => props().token.value
 })
 
 const resolveLanguage = props => {

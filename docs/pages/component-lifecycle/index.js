@@ -2,7 +2,11 @@ import "./style.css"
 import maoka from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
-import { DocsNav } from "../../src/components/docs-nav.js"
+import {
+	DocsArticle,
+	DocsLayout,
+	DocsPageBoundary,
+} from "../../src/components/docs-page.js"
 import { SiteFooter } from "../../src/components/site-footer.js"
 import { ThemeToggle } from "../../src/components/theme-toggle.js"
 
@@ -50,10 +54,10 @@ const PatchedComponent = Component().beforeCreate(params => {
 	// Do stuff here even before the component is created.
 })`
 
-const createExample = `const Counter = maoka.html.button(({ value, props, refresh$ }) => {
+const createExample = `const Counter = maoka.html.button(({ use, value, props, refresh$ }) => {
 	let count = props().initialCount
 
-	value.type = "button"
+	use(maoka.jabs.attributes.set("type", "button"))
 	value.onclick = () => {
 		count++
 		refresh$()
@@ -73,28 +77,38 @@ const renderExample = `const Count = maoka.html.span(({ props }) => {
 	}
 })
 
+const IncrementButton = maoka.html.button(({ props, use, value }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
+	value.onclick = () => props().increment()
+
+	return () => "+"
+})
+
 const Counter = maoka.create(({ refresh$ }) => {
 	let count = 0
+	const increment = () => {
+		count++
+		refresh$()
+	}
 
 	return () => [
 		Count(() => ({ key: "count", count })),
-		maoka.html.button(({ value }) => {
-			value.onclick = () => {
-				count++
-				refresh$()
-			}
-
-			return () => "+"
-		})(),
+		IncrementButton(() => ({ increment })),
 	]
 })`
 
-const mountExample = `const AutoFocusInput = maoka.html.input(({ lifecycle, value }) => {
-	value.type = "text"
+const mountExample = `import maokaDom from "maoka/dom"
+
+const AutoFocusInput = maoka.html.input(({ lifecycle, use }) => {
+	use(maoka.jabs.attributes.set("type", "text"))
+
+	const input = use(maokaDom.jabs.ifInDOM(({ value }) => value))
 
 	lifecycle.afterMount(() => {
-		value.focus()
-		value.scrollIntoView({ block: "nearest" })
+		if (!input) return
+
+		input.focus()
+		input.scrollIntoView({ block: "nearest" })
 	})
 })`
 
@@ -164,18 +178,27 @@ const destroyExample = `const SocketStatus = maoka.html.output(({ lifecycle, ref
 	return () => status
 })`
 
-const unmountExample = `const WindowSize = maoka.html.output(({ lifecycle, refresh$ }) => {
-	let label = \`\${window.innerWidth} x \${window.innerHeight}\`
+const unmountExample = `import maokaDom from "maoka/dom"
+
+const WindowSize = maoka.html.output(({ lifecycle, refresh$, use }) => {
+	const win = use(
+		maokaDom.jabs.ifInDOM(({ value }) => value.ownerDocument.defaultView),
+	)
+	let label = win ? \`\${win.innerWidth} x \${win.innerHeight}\` : "unknown"
 	const onResize = () => {
-		label = \`\${window.innerWidth} x \${window.innerHeight}\`
+		if (!win) return
+
+		label = \`\${win.innerWidth} x \${win.innerHeight}\`
 		refresh$()
 	}
 
 	lifecycle.afterMount(() => {
-		window.addEventListener("resize", onResize)
+		if (!win) return
+
+		win.addEventListener("resize", onResize)
 
 		return () => {
-			window.removeEventListener("resize", onResize)
+			win.removeEventListener("resize", onResize)
 		}
 	})
 
@@ -226,13 +249,11 @@ const Panel = TraceablePanel(() => ({ key: "settings", title: "Settings" }))
 		lifecycle.beforeUnmount(() => console.info("panel removed"))
 	})`
 
-const Page = maoka.create(() => () => [
-	maoka.html.main(({ value }) => {
-		value.className = "docs-layout"
-
-		return () => [
-			DocsNav(),
-			maoka.html.article(() => () => [
+const Page = maoka.create(() =>
+	() =>
+		DocsLayout(() => ({
+			children: DocsArticle(() => ({
+			children: [
 				Hero(),
 				Section(() => ({
 					id: "tldr",
@@ -335,35 +356,50 @@ const Page = maoka.create(() => () => [
 					code: beforeCreateExample,
 				})),
 				SiteFooter(),
-			]),
-		]
-	})(),
-])
+			],
+			})),
+		})),
+)
+
+const LifecycleTitle = maoka.html.h1(() => () => "Component lifecycle")
 
 const Hero = maoka.html.header(() => () => [
 	ThemeToggle(),
-	maoka.html.p(({ value }) => {
-		value.className = "eyebrow"
-
-		return () => "Maoka lifecycle"
-	})(),
-	maoka.html.h1(() => () => "Component lifecycle"),
-	maoka.html.div(({ value }) => {
-		value.className = "lifecycle-callout"
-
-		return () =>
-			"Lifecycle methods are available in jabs too, so behavior layers can use them to handle side effects, cleanup, recovery, and refresh policy without moving that work into the component body."
-	})(),
+	HeroEyebrow(),
+	LifecycleTitle(),
+	LifecycleCallout(),
 ])
 
-const Section = maoka.html.section(({ props, value }) => {
-	value.id = props().id
+const Section = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.assignId(() => props().id))
 
 	return () => [
-		maoka.html.h2(() => () => props().title),
-		...props().body.map(body => maoka.html.p(() => () => body)()),
+		SectionTitle(() => ({ text: props().title })),
+		...props().body.map(body => SectionBodyParagraph(() => ({ text: body }))),
 		props().code ? CodeBlock(() => ({ js: props().code })) : null,
 	]
 })
 
-render(document.body, Page())
+const HeroEyebrow = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("eyebrow"))
+
+	return () => "Maoka lifecycle"
+})
+
+const LifecycleCallout = maoka.html.div(({ use }) => {
+	use(maoka.jabs.classes.set("lifecycle-callout"))
+
+	return () =>
+		"Lifecycle methods are available in jabs too, so behavior layers can use them to handle side effects, cleanup, recovery, and refresh policy without moving that work into the component body."
+})
+
+const SectionTitle = maoka.html.h2(({ props }) => () => props().text)
+
+const SectionBodyParagraph = maoka.html.p(({ props }) => () => props().text)
+
+render(
+	document.body,
+	DocsPageBoundary(() => ({
+		children: Page(),
+	})),
+)

@@ -2,7 +2,11 @@ import "./style.css"
 import maoka from "../../../index.js"
 import { render } from "../../../dom/index.js"
 import { CodeBlock } from "../../src/components/code-block.js"
-import { DocsNav } from "../../src/components/docs-nav.js"
+import {
+	DocsArticle,
+	DocsLayout,
+	DocsPageBoundary,
+} from "../../src/components/docs-page.js"
 import { NotebookSheet } from "../../src/components/notebook-sheet.js"
 import { SiteFooter } from "../../src/components/site-footer.js"
 import { ThemeToggle } from "../../src/components/theme-toggle.js"
@@ -56,8 +60,8 @@ const blueprintsBadExample = `const Dashboard = maoka.create(({ props }) => {
 	return () => StatusLine()
 })`
 
-const blueprintsGoodExample = `const StatusLine = maoka.html.p(({ props, value }) => {
-	value.className = props().tone
+const blueprintsGoodExample = `const StatusLine = maoka.html.p(({ props, use }) => {
+	use(maoka.jabs.classes.assign(() => props().tone))
 
 	return () => props().message
 })
@@ -119,26 +123,34 @@ const asyncBadExample = `const Profile = maoka.html.article(({ props, refresh$, 
 	return () => profile?.name ?? "Loading profile..."
 })`
 
-const responsibleTamingExample = `const useWindowWidth = ({ lifecycle, refresh$ }) => {
-	let width = window.innerWidth
+const responsibleTamingExample = `import maokaDom from "maoka/dom"
+
+const useWindowWidth$ = ({ lifecycle, refresh$, use }) => {
+	const win = use(
+		maokaDom.jabs.ifInDOM(({ value }) => value.ownerDocument.defaultView),
+	)
+	let width = win?.innerWidth ?? 0
 
 	lifecycle.afterMount(() => {
+		if (!win) return
+
 		const onResize = () => {
-			width = window.innerWidth
+			width = win.innerWidth
 			refresh$()
 		}
 
-		window.addEventListener("resize", onResize)
+		win.addEventListener("resize", onResize)
 
 		return () => {
-			window.removeEventListener("resize", onResize)
+			win.removeEventListener("resize", onResize)
 		}
 	})
 
 	return () => width
 }`
 
-const childrenGoodExample = `const IncrementButton = maoka.html.button(({ props, value }) => {
+const childrenGoodExample = `const IncrementButton = maoka.html.button(({ props, use, value }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
 	value.onclick = () => props().increment()
 
 	return () => "+"
@@ -440,63 +452,39 @@ const sections = [
 	},
 ]
 
-const Page = maoka.create(() => () => [
-	maoka.html.main(({ value }) => {
-		value.className = "docs-layout"
+const Page = maoka.create(() =>
+	() =>
+		DocsLayout(() => ({
+			children: DocsArticle(() => ({
+				children: [
+					Hero(),
+					...sections.map(section => Section(() => section)),
+					SiteFooter(),
+				],
+			})),
+		})),
+)
 
-		return () => [
-			DocsNav(),
-			maoka.html.article(() => () => [
-				Hero(),
-				...sections.map(section => Section(() => section)),
-				SiteFooter(),
-			]),
-		]
-	})(),
-])
+const BestPracticesTitle = maoka.html.h1(() => () => "Best practices")
 
 const Hero = maoka.html.header(() => () => [
 	ThemeToggle(),
-	maoka.html.p(({ value }) => {
-		value.className = "eyebrow"
-
-		return () => "Practical Maoka"
-	})(),
-	maoka.html.h1(() => () => "Best practices"),
-	maoka.html.p(({ value }) => {
-		value.className = "lede"
-
-		return () =>
-			"Conventions for writing Maoka components and jabs that stay explicit, predictable, and easy to maintain as refresh behavior grows more involved."
-	})(),
+	HeroEyebrow(),
+	BestPracticesTitle(),
+	HeroLead(),
 ])
 
-const Section = maoka.html.section(({ props, value }) => {
-	value.id = props().id
+const Section = maoka.html.section(({ props, use }) => {
+	use(maoka.jabs.assignId(() => props().id))
 
 	return () => [
-		maoka.html.h2(() => () => props().title),
-		...props().body.map(body => maoka.html.p(() => () => body)()),
+		SectionTitle(() => ({ text: props().title })),
+		...props().body.map(body => SectionBodyParagraph(() => ({ text: body }))),
 		props().examples?.length
-			? maoka.html.div(({ value }) => {
-					value.className = "practice-examples"
-
-					return () =>
-						props().examples.map(example => ExampleCard(() => ({ ...example })))
-				})()
+			? PracticeExamples(() => ({ examples: props().examples }))
 			: null,
 		props().links?.length
-			? maoka.html.p(({ value }) => {
-					value.className = "practice-links"
-
-					return () => [
-						"See also: ",
-						...props().links.flatMap((link, index) => [
-							index ? ", " : "",
-							InlineLink(() => link),
-						]),
-					]
-				})()
+			? PracticeLinks(() => ({ links: props().links }))
 			: null,
 	]
 })
@@ -507,29 +495,81 @@ const ExampleCard = maoka.create(({ props }) => {
 			variant: "note",
 			className: `practice-example practice-example-${props().tone}`,
 			children: [
-				maoka.html.div(({ value }) => {
-					value.className = "practice-example-heading"
-
-					return () => [
-						maoka.html.span(({ props, value }) => {
-							value.className = `practice-badge practice-badge-${props().tone}`
-
-							return () => props().title
-						})(() => ({
-							title: props().title,
-							tone: props().tone,
-						})),
-					]
-				})(),
+				PracticeExampleHeading(() => ({
+					title: props().title,
+					tone: props().tone,
+				})),
 				CodeBlock(() => ({ js: props().code })),
 			],
 		}))
 })
 
-const InlineLink = maoka.html.a(({ props, value }) => {
-	value.href = props().href
+const HeroEyebrow = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("eyebrow"))
+
+	return () => "Practical Maoka"
+})
+
+const HeroLead = maoka.html.p(({ use }) => {
+	use(maoka.jabs.classes.set("lede"))
+
+	return () =>
+		"Conventions for writing Maoka components and jabs that stay explicit, predictable, and easy to maintain as refresh behavior grows more involved."
+})
+
+const SectionTitle = maoka.html.h2(({ props }) => () => props().text)
+
+const SectionBodyParagraph = maoka.html.p(({ props }) => () => props().text)
+
+const PracticeExamples = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("practice-examples"))
+
+	return () =>
+		props().examples.map(example => ExampleCard(() => ({ ...example })))
+})
+
+const PracticeLinks = maoka.html.p(({ props, use }) => {
+	use(maoka.jabs.classes.set("practice-links"))
+
+	return () => [
+		"See also: ",
+		...props().links.flatMap((link, index) => [
+			index ? ", " : "",
+			InlineLink(() => link),
+		]),
+	]
+})
+
+const PracticeExampleHeading = maoka.html.div(({ props, use }) => {
+	use(maoka.jabs.classes.set("practice-example-heading"))
+
+	return () => [
+		PracticeBadge(() => ({
+			title: props().title,
+			tone: props().tone,
+		})),
+	]
+})
+
+const PracticeBadge = maoka.html.span(({ props, use }) => {
+	use(
+		maoka.jabs.classes.assign(
+			() => `practice-badge practice-badge-${props().tone}`,
+		),
+	)
+
+	return () => props().title
+})
+
+const InlineLink = maoka.html.a(({ props, use }) => {
+	use(maoka.jabs.attributes.assign("href", () => props().href))
 
 	return () => props().label
 })
 
-render(document.body, Page())
+render(
+	document.body,
+	DocsPageBoundary(() => ({
+		children: Page(),
+	})),
+)

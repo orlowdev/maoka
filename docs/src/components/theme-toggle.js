@@ -1,4 +1,5 @@
 import maoka from "../../../index.js"
+import maokaDom from "../../../dom/index.js"
 
 const STORAGE_KEY = "maoka-theme-preference"
 const THEME_COLOR_LIGHT = "#091326"
@@ -9,20 +10,36 @@ const themeOptions = [
 	{ id: "system", label: "System" },
 ]
 
-export const ThemeToggle = maoka.html.div(({ lifecycle, refresh$, value }) => {
+export const ThemeToggle = maoka.html.div(({ lifecycle, refresh$, use }) => {
 	let preference = getThemePreference()
+	const dom = use(
+		maokaDom.jabs.ifInDOM(({ value }) => {
+			const doc = value.ownerDocument
+			const win = doc?.defaultView
+
+			return doc && win
+				? {
+						document: doc,
+						window: win,
+					}
+				: null
+		}),
+	)
+
+	use(maoka.jabs.classes.set("theme-toggle"))
+	use(maoka.jabs.aria.set("label", "Theme mode"))
 
 	const sync = () => {
-		preference = getThemePreference()
+		preference = getThemePreference(dom)
 		refresh$()
 	}
 
 	lifecycle.afterMount(() => {
-		const media = globalThis.matchMedia?.("(prefers-color-scheme: dark)")
+		const media = dom?.window.matchMedia?.("(prefers-color-scheme: dark)")
 		const onChange = () => {
-			if (getThemePreference() !== "system") return
+			if (getThemePreference(dom) !== "system") return
 
-			applyThemePreference("system")
+			applyThemePreference(dom, "system")
 			sync()
 		}
 
@@ -33,66 +50,73 @@ export const ThemeToggle = maoka.html.div(({ lifecycle, refresh$, value }) => {
 		}
 	})
 
-	return () => {
-		value.className = "theme-toggle"
-		value.setAttribute("aria-label", "Theme mode")
-
-		return themeOptions.map(option =>
+	return () =>
+		themeOptions.map(option =>
 			ThemeToggleButton(() => ({
 				active: preference === option.id,
 				label: option.label,
 				onClick: () => {
-					applyThemePreference(option.id)
+					applyThemePreference(dom, option.id)
 					sync()
 				},
 			})),
 		)
-	}
 })
 
-const ThemeToggleButton = maoka.html.button(({ props, value }) => {
-	value.type = "button"
-	value.onclick = () => props().onClick()
+const ThemeToggleButton = maoka.html.button(({ props, use }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
+	use(
+		maoka.jabs.classes.assign(() =>
+			["theme-toggle-button", props().active ? "is-active" : ""]
+				.filter(Boolean)
+				.join(" "),
+		),
+	)
+	use(maoka.jabs.aria.assign("pressed", () => String(props().active)))
+	use(
+		maokaDom.jabs.ifInDOM(({ value, lifecycle }) => {
+			const sync = () => {
+				value.onclick = () => props().onClick()
+			}
 
-	return () => {
-		value.className = [
-			"theme-toggle-button",
-			props().active ? "is-active" : "",
-		]
-			.filter(Boolean)
-			.join(" ")
-		value.setAttribute("aria-pressed", String(props().active))
+			sync()
+			lifecycle.beforeRefresh(() => {
+				sync()
 
-		return props().label
-	}
+				return false
+			})
+		}),
+	)
+
+	return () => props().label
 })
 
-const getThemePreference = () => {
+const getThemePreference = dom => {
 	const preference =
-		globalThis.document?.documentElement?.dataset.themePreference ??
-		readStoredPreference()
+		dom?.document.documentElement?.dataset.themePreference ??
+		readStoredPreference(dom)
 
 	return preference === "light" || preference === "dark" || preference === "system"
 		? preference
 		: "system"
 }
 
-const readStoredPreference = () => {
+const readStoredPreference = dom => {
 	try {
-		return globalThis.localStorage?.getItem(STORAGE_KEY) ?? "system"
+		return dom?.window.localStorage?.getItem(STORAGE_KEY) ?? "system"
 	} catch {
 		return "system"
 	}
 }
 
-const getSystemTheme = () =>
-	globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches
+const getSystemTheme = dom =>
+	dom?.window.matchMedia?.("(prefers-color-scheme: dark)").matches
 		? "dark"
 		: "light"
 
-const applyThemePreference = preference => {
-	const resolved = preference === "system" ? getSystemTheme() : preference
-	const root = globalThis.document?.documentElement
+const applyThemePreference = (dom, preference) => {
+	const resolved = preference === "system" ? getSystemTheme(dom) : preference
+	const root = dom?.document.documentElement
 
 	if (!root) return
 
@@ -100,10 +124,10 @@ const applyThemePreference = preference => {
 	root.dataset.theme = resolved
 
 	try {
-		globalThis.localStorage?.setItem(STORAGE_KEY, preference)
+		dom.window.localStorage?.setItem(STORAGE_KEY, preference)
 	} catch {}
 
-	const themeMeta = globalThis.document?.querySelector('meta[name="theme-color"]')
+	const themeMeta = dom.document.querySelector('meta[name="theme-color"]')
 
 	if (themeMeta) {
 		themeMeta.setAttribute(

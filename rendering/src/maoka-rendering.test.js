@@ -771,6 +771,57 @@ describe("createRoot", () => {
 		])
 	})
 
+	test("mounts implicit children added after the parent is already mounted", () => {
+		const calls = []
+		const root = createRoot({
+			value: { tag: "root" },
+			createValue: tag => ({ tag }),
+			refreshNode: () => {},
+			insertNode: (parent, node) => {
+				calls.push(`insert:${node.key}:into:${parent.key}`)
+			},
+		})
+		const rootParent = createNode("root-parent")
+		const parent = createNode("parent")
+		let showChild = false
+		let child
+		const Child = (root, parent) => {
+			child = createNode("child")
+			child.root = root
+			child.parent = parent
+			child.value = parent.value
+			child.lifecycleHandlers.afterMount.push(() => {
+				calls.push("afterMount:child")
+			})
+
+			return child
+		}
+
+		rootParent.parent = null
+		rootParent.mounted = true
+		rootParent.children.push(parent)
+		parent.parent = rootParent
+		parent.mounted = true
+		parent.render = () => parent.lastRenderResult
+		parent.lastRenderResult = []
+
+		root.mountNode(parent)
+
+		expect(calls).toEqual(["insert:parent:into:root-parent"])
+
+		showChild = true
+		parent.lastRenderResult = showChild ? [() => Child] : []
+
+		root.mountNode(parent)
+
+		expect(child.mounted).toBe(true)
+		expect(calls).toEqual([
+			"insert:parent:into:root-parent",
+			"afterMount:child",
+			"insert:parent:into:root-parent",
+		])
+	})
+
 	test("routes mount-time renderer errors to node error handlers", () => {
 		const errors = []
 		const root = createRoot({

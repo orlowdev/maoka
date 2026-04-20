@@ -22,6 +22,10 @@
 			"types": "./test/maoka-test.d.ts",
 			"import": "./test/index.js"
 		},
+		"./string": {
+			"types": "./string/maoka-string.d.ts",
+			"import": "./string/index.js"
+		},
 		"./rendering": {
 			"types": "./rendering/maoka-rendering.d.ts",
 			"import": "./rendering/index.js"

@@ -10,7 +10,7 @@ export * as jabs from "./jabs.impl.js"
 export const create = definition => {
 	const type = {}
 
-	return props =>
+	const blueprint = props =>
 		createComponent(props, type, (root, parent, beforeCreateHandlers) =>
 			createBase(
 				root,
@@ -22,6 +22,10 @@ export const create = definition => {
 				beforeCreateHandlers,
 			),
 		)
+
+	blueprint[BLUEPRINT_META] = true
+
+	return blueprint
 }
 
 /**
@@ -34,7 +38,7 @@ export const create = definition => {
 export const pure = (tag, definition) => {
 	const type = { tag }
 
-	return props =>
+	const blueprint = props =>
 		createComponent(props, type, (root, parent, beforeCreateHandlers) =>
 			createBase(
 				root,
@@ -46,10 +50,19 @@ export const pure = (tag, definition) => {
 				beforeCreateHandlers,
 			),
 		)
+
+	blueprint[BLUEPRINT_META] = true
+
+	return blueprint
 }
 
 export const isComponent = value =>
 	typeof value === "function" && Boolean(value[COMPONENT_META])
+
+export const isBlueprint = value =>
+	typeof value === "function" && Boolean(value[BLUEPRINT_META])
+
+export const isNode = value => isRecord(value) && Boolean(value[NODE_META])
 
 export const getComponentKey = component => {
 	const props = component[COMPONENT_META]?.props
@@ -129,6 +142,8 @@ export const svg = SVG_TAGS.reduce((acc, tag) => {
 // --- Internal ---
 
 const COMPONENT_META = Symbol("maoka.component")
+const BLUEPRINT_META = Symbol("maoka.blueprint")
+const NODE_META = Symbol("maoka.node")
 
 /**
  * Internal function to create a Maoka node.
@@ -206,6 +221,7 @@ const createBase = (
 			propsSource = nextProps
 		},
 	}
+	markNode(node)
 
 	const params = {
 		use: jab => jab(params),
@@ -277,3 +293,11 @@ const havePropsChanged = (previousProps = {}, nextProps = {}) =>
 	Object.keys(nextProps).some(
 		propKey => nextProps[propKey] !== previousProps?.[propKey],
 	) || Object.keys(previousProps ?? {}).some(propKey => !(propKey in nextProps))
+
+const isRecord = value => typeof value === "object" && value !== null
+
+export const markNode = node => {
+	node[NODE_META] = true
+
+	return node
+}

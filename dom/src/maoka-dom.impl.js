@@ -2,7 +2,7 @@
 
 import { HTML_TAGS, MATH_TAGS, SVG_TAGS } from "../../src/maoka.constants.js"
 import { createRoot } from "../../rendering/index.js"
-import { isComponent } from "../../src/maoka.impl.js"
+import { isComponent, isNode, markNode } from "../../src/maoka.impl.js"
 
 const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML"
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg"
@@ -39,6 +39,13 @@ export const render = (container, component, options = {}) => {
 
 	return root
 }
+
+export const isDomNode = value => isNode(value) && isDomValue(value.value)
+export const isDomValue = value =>
+	typeof value === "object" &&
+	value !== null &&
+	((typeof globalThis.Node === "function" && value instanceof globalThis.Node) ||
+		(typeof value.nodeType === "number" && "ownerDocument" in value))
 
 const scheduleAnimationFrame = flush => {
 	if (typeof requestAnimationFrame !== "function") {
@@ -179,7 +186,7 @@ const createRootNode = (root, container) => {
 		mounted: true,
 	}
 
-	return node
+	return markNode(node)
 }
 
 const instantiateComponent = (component, root, parent) => component(root, parent)

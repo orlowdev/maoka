@@ -1,26 +1,26 @@
-/** @import { MaokaDom } from "../maoka-dom.d.ts" */
+/** @import { MaokaTest } from "../maoka-test.d.ts" */
 
-/** @type {MaokaDom.IfInDom} */
-export const ifInDOM = callback => params => {
-	if (isDomValue(params.value)) {
+/** @type {MaokaTest.IfInTest} */
+export const ifInTest = callback => params => {
+	if (isTestValue(params.value)) {
 		return callback(params)
 	}
 }
 
 export const attributes = {
-	/** @type {MaokaDom.AttributeGet} */
+	/** @type {MaokaTest.AttributeGet} */
 	get: name =>
-		ifInDOM(({ value }) => value.getAttribute(name) ?? undefined),
+		ifInTest(({ value }) => getAttribute(value, name)),
 
-	/** @type {MaokaDom.AttributeSet} */
+	/** @type {MaokaTest.AttributeSet} */
 	set: (name, attributeValue = "") =>
-		ifInDOM(({ value }) => {
-			value.setAttribute(name, String(attributeValue))
+		ifInTest(({ value }) => {
+			applyAttributeValue(value, name, String(attributeValue))
 		}),
 
-	/** @type {MaokaDom.AttributeAssign} */
+	/** @type {MaokaTest.AttributeAssign} */
 	assign: (name, getValue) =>
-		ifInDOM(({ value, lifecycle }) => {
+		ifInTest(({ value, lifecycle }) => {
 			let assignedValue = normalizeAttributeValue(getValue())
 
 			applyAttributeValue(value, name, assignedValue)
@@ -39,23 +39,15 @@ export const attributes = {
 }
 
 export const classes = {
-	/** @type {MaokaDom.ClassesSet} */
+	/** @type {MaokaTest.ClassesSet} */
 	set: (...classesToSet) =>
-		ifInDOM(({ value }) => {
-			const normalized = normalizeClassTokens(classesToSet)
-
-			if (normalized.length === 0) {
-				value.removeAttribute("class")
-
-				return
-			}
-
-			value.setAttribute("class", normalized.join(" "))
+		ifInTest(({ value }) => {
+			applyClassName(value, normalizeClassTokens(classesToSet).join(" "))
 		}),
 
-	/** @type {MaokaDom.ClassesAdd} */
+	/** @type {MaokaTest.ClassesAdd} */
 	add: (...classesToAdd) =>
-		ifInDOM(({ value }) => {
+		ifInTest(({ value }) => {
 			const nextClasses = new Set(getClassTokens(value))
 
 			for (const className of normalizeClassTokens(classesToAdd)) {
@@ -65,9 +57,9 @@ export const classes = {
 			applyClassTokens(value, nextClasses)
 		}),
 
-	/** @type {MaokaDom.ClassesRemove} */
+	/** @type {MaokaTest.ClassesRemove} */
 	remove: (...classesToRemove) =>
-		ifInDOM(({ value }) => {
+		ifInTest(({ value }) => {
 			const nextClasses = new Set(getClassTokens(value))
 
 			for (const className of normalizeClassTokens(classesToRemove)) {
@@ -77,24 +69,24 @@ export const classes = {
 			applyClassTokens(value, nextClasses)
 		}),
 
-	/** @type {MaokaDom.ClassesHas} */
+	/** @type {MaokaTest.ClassesHas} */
 	has: className =>
-		ifInDOM(({ value }) => {
+		ifInTest(({ value }) => {
 			validateClassToken(className)
 
 			return getClassTokens(value).includes(className)
 		}),
 
-	/** @type {MaokaDom.ClassesToggle} */
+	/** @type {MaokaTest.ClassesToggle} */
 	toggle: (getEnabled, className) => {
 		validateClassToken(className)
 
 		return classes.assign(() => (getEnabled() ? className : ""))
 	},
 
-	/** @type {MaokaDom.ClassesAssign} */
+	/** @type {MaokaTest.ClassesAssign} */
 	assign: getClassName =>
-		ifInDOM(({ value, lifecycle }) => {
+		ifInTest(({ value, lifecycle }) => {
 			let assignedClassName = normalizeAssignedClassName(getClassName())
 
 			applyClassName(value, assignedClassName)
@@ -113,43 +105,61 @@ export const classes = {
 }
 
 export const dataAttributes = {
-	/** @type {MaokaDom.AttributeGet} */
+	/** @type {MaokaTest.AttributeGet} */
 	get: name => attributes.get(`data-${name}`),
 
-	/** @type {MaokaDom.AttributeSet} */
+	/** @type {MaokaTest.AttributeSet} */
 	set: (name, value = "") => attributes.set(`data-${name}`, value),
 
-	/** @type {MaokaDom.AttributeAssign} */
+	/** @type {MaokaTest.AttributeAssign} */
 	assign: (name, getValue) => attributes.assign(`data-${name}`, getValue),
 }
 
 export const aria = {
-	/** @type {MaokaDom.AttributeGet} */
+	/** @type {MaokaTest.AttributeGet} */
 	get: name => attributes.get(`aria-${name}`),
 
-	/** @type {MaokaDom.AttributeSet} */
+	/** @type {MaokaTest.AttributeSet} */
 	set: (name, value = "") => attributes.set(`aria-${name}`, value),
 
-	/** @type {MaokaDom.AttributeAssign} */
+	/** @type {MaokaTest.AttributeAssign} */
 	assign: (name, getValue) => attributes.assign(`aria-${name}`, getValue),
 }
 
-/** @type {MaokaDom.SetId} */
+/** @type {MaokaTest.SetId} */
 export const setId = id => attributes.set("id", id)
 
-/** @type {MaokaDom.AssignId} */
+/** @type {MaokaTest.AssignId} */
 export const assignId = getId => attributes.assign("id", getId)
 
-const isDomValue = value =>
+export const isTestValue = value =>
 	typeof value === "object" &&
 	value !== null &&
-	((typeof globalThis.Node === "function" && value instanceof globalThis.Node) ||
-		(typeof value.nodeType === "number" && "ownerDocument" in value))
+	typeof value.tag === "string" &&
+	typeof value.text === "string" &&
+	Array.isArray(value.children) &&
+	("parent" in value || value.parent === null)
+
+const getAttribute = (value, name) => {
+	const attributeValue = getAttrs(value).get(name)
+
+	if (attributeValue === true) return ""
+
+	return attributeValue
+}
 
 const getClassTokens = value => {
-	const className = value.getAttribute("class") ?? ""
+	const className = getAttribute(value, "class") ?? ""
 
 	return className.split(/\s+/).filter(Boolean)
+}
+
+const getAttrs = value => {
+	if (!(value.attrs instanceof Map)) {
+		value.attrs = new Map()
+	}
+
+	return value.attrs
 }
 
 const applyClassTokens = (value, classTokens) => {
@@ -157,13 +167,15 @@ const applyClassTokens = (value, classTokens) => {
 }
 
 const applyClassName = (value, className) => {
+	const attrs = getAttrs(value)
+
 	if (!className) {
-		value.removeAttribute("class")
+		attrs.delete("class")
 
 		return
 	}
 
-	value.setAttribute("class", className)
+	attrs.set("class", className)
 }
 
 const normalizeClassTokens = classesToNormalize => {
@@ -183,13 +195,15 @@ const normalizeAssignedClassName = value =>
 	value == null || value === "" ? undefined : String(value)
 
 const applyAttributeValue = (value, name, attributeValue) => {
+	const attrs = getAttrs(value)
+
 	if (attributeValue === undefined) {
-		value.removeAttribute(name)
+		attrs.delete(name)
 
 		return
 	}
 
-	value.setAttribute(name, attributeValue)
+	attrs.set(name, attributeValue)
 }
 
 const validateClassToken = token => {

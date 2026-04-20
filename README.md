@@ -69,6 +69,7 @@ Components produce Maoka nodes, not DOM nodes directly. The same component model
 is used by:
 
 - `maoka/dom` for real browser rendering
+- `maoka/string` for HTML string rendering
 - `maoka/test` for in-memory testing
 - `maoka/rendering` for lower-level renderer integration
 
@@ -149,6 +150,12 @@ The test adapter exports:
 
 Use it when you want behavior tests without a browser or `jsdom`.
 
+### `maoka/string`
+
+The string adapter exports `render(componentInstance, options?)` and a default
+namespace reserved for future string-specific helpers. Use it when you want to
+serialize Maoka output into an HTML string without booting a DOM.
+
 ### `maoka/rendering`
 
 This module re-exports the lower-level rendering implementation used to build
@@ -163,6 +170,7 @@ This repo is a library workspace, not an application. The main areas are:
 - [`src/`](./src): core runtime implementation, built-in jabs, constants, and
   runtime tests
 - [`dom/`](./dom): DOM renderer adapter and its tests
+- [`string/`](./string): HTML string renderer adapter and its tests
 - [`test/`](./test): in-memory test renderer and its tests
 - [`rendering/`](./rendering): renderer-agnostic rendering internals and tests
 - [`docs/`](./docs): the documentation site source, examples, shared UI

@@ -1,4 +1,5 @@
 import maoka from "../../../index.js"
+import maokaDom from "../../../dom/index.js"
 import "./docs-nav.css"
 
 const pages = [
@@ -11,23 +12,40 @@ const pages = [
 	{ href: "/rendering", label: "Rendering" },
 ]
 
-export const DocsNav = maoka.html.aside(({ lifecycle, refresh$, value }) => {
+export const DocsNav = maoka.html.aside(({ lifecycle, refresh$, use }) => {
 	let sections = []
 	let isSectionsOpen = true
+	const dom = use(
+		maokaDom.jabs.ifInDOM(({ value }) => {
+			const win = value.ownerDocument?.defaultView
+
+			return win
+				? {
+						value,
+						window: win,
+					}
+				: null
+		}),
+	)
+	const readSections = () => (dom ? collectSections(dom.value) : [])
 
 	const syncSectionsState = () => {
-		isSectionsOpen = globalThis.innerWidth > 860
+		if (!dom) return
+
+		isSectionsOpen = dom.window.innerWidth > 860
 		refresh$()
 	}
 
 	lifecycle.afterMount(() => {
-		sections = collectSections(value)
+		if (!dom) return
+
+		sections = readSections()
 		syncSectionsState()
-		globalThis.addEventListener("resize", syncSectionsState)
+		dom.window.addEventListener("resize", syncSectionsState)
 		refresh$()
 
 		return () => {
-			globalThis.removeEventListener("resize", syncSectionsState)
+			dom.window.removeEventListener("resize", syncSectionsState)
 		}
 	})
 
@@ -49,56 +67,74 @@ export const DocsNav = maoka.html.aside(({ lifecycle, refresh$, value }) => {
 
 // --- Internal ---
 
-const Logo = maoka.html.a(({ value }) => {
-	value.href = "/"
-	value.className = "brand-link"
+const Logo = maoka.html.a(({ use }) => {
+	use(maoka.jabs.attributes.set("href", "/"))
+	use(maoka.jabs.classes.set("brand-link"))
 
 	return () => "真岡"
 })
 
-const Pages = maoka.html.nav(({ value }) => {
-	value.setAttribute("aria-label", "Documentation pages")
+const Pages = maoka.html.nav(({ use }) => {
+	use(maoka.jabs.aria.set("label", "Documentation pages"))
 
 	return () => pages.map(page => NavLink(() => page))
 })
 
-const SectionsNav = maoka.html.section(({ props, value }) => {
-	value.className = [
-		"sections-nav",
-		props().isOpen ? "is-open" : "is-collapsed",
-	]
-		.filter(Boolean)
-		.join(" ")
+const SectionsNav = maoka.html.section(({ props, use }) => {
+	use(
+		maoka.jabs.classes.assign(() =>
+			["sections-nav", props().isOpen ? "is-open" : "is-collapsed"]
+				.filter(Boolean)
+				.join(" "),
+		),
+	)
 
 	return () => [
-		maoka.html.button(({ props, value }) => {
-			value.type = "button"
-			value.className = "sections-toggle"
-			value.setAttribute("aria-expanded", String(props().isOpen))
-			value.onclick = () => props().toggle()
-
-			return () => "On this page"
-		})(() => props()),
+		SectionsToggleButton(() => props()),
 		props().isOpen
-			? maoka.html.nav(({ value, props }) => {
-					value.setAttribute("aria-label", "Page sections")
-
-					return () =>
-						props().sections.map(section =>
-							NavLink(() => ({
-								className: `section-link section-link-depth-${section.depth}`,
-								href: `#${section.id}`,
-								label: section.label,
-							})),
-						)
-				})(() => props())
+			? SectionsLinks(() => props())
 			: null,
 	]
 })
 
-const NavLink = maoka.html.a(({ props, value }) => {
-	value.href = props().href
-	value.className = props().className ?? ""
+const SectionsToggleButton = maoka.html.button(({ props, use }) => {
+	use(maoka.jabs.attributes.set("type", "button"))
+	use(maoka.jabs.classes.set("sections-toggle"))
+	use(maoka.jabs.aria.assign("expanded", () => String(props().isOpen)))
+	use(
+		maokaDom.jabs.ifInDOM(({ value, lifecycle }) => {
+			const sync = () => {
+				value.onclick = () => props().toggle()
+			}
+
+			sync()
+			lifecycle.beforeRefresh(() => {
+				sync()
+
+				return false
+			})
+		}),
+	)
+
+	return () => "On this page"
+})
+
+const SectionsLinks = maoka.html.nav(({ use, props }) => {
+	use(maoka.jabs.aria.set("label", "Page sections"))
+
+	return () =>
+		props().sections.map(section =>
+			NavLink(() => ({
+				className: `section-link section-link-depth-${section.depth}`,
+				href: `#${section.id}`,
+				label: section.label,
+			})),
+		)
+})
+
+const NavLink = maoka.html.a(({ props, use }) => {
+	use(maoka.jabs.attributes.assign("href", () => props().href))
+	use(maoka.jabs.classes.assign(() => props().className ?? ""))
 
 	return () => props().label
 })

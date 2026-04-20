@@ -1,82 +1,94 @@
 import type { Maoka } from "../maoka.d.ts"
 
-export namespace MaokaDom {
-	export type Guards = {
-		isDomValue: (value: unknown) => value is Node
-		isDomNode: (value: unknown) => value is Maoka.Node<Node>
+export interface MaokaString {
+	jabs: MaokaString.Jabs
+	guards: MaokaString.Guards
+}
+
+export namespace MaokaString {
+	export type Value = {
+		tag: string
+		namespace: Maoka.Namespace | null
+		text: string
+		children: Value[]
+		parent: Value | null
+		attrs: Map<string, string | true>
 	}
 
+	export type Guards = {
+		isStringValue: (value: unknown) => value is Value
+		isStringNode: (value: unknown) => value is Maoka.Node<Value>
+	}
+
+	export type IfInString = <
+		$Props extends Maoka.BaseProps = Maoka.NoProps,
+		$Return = void,
+	>(
+		callback: (params: Maoka.Params<Value, $Props>) => $Return,
+	) => Maoka.Jab<Value, $Props, $Return | undefined>
+
 	export type AttributeGet = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		name: string,
-	) => Maoka.Jab<$Element, $Props, string | undefined>
+	) => Maoka.Jab<Value, $Props, string | undefined>
 
 	export type AttributeSet = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		name: string,
 		value?: string,
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type AttributeAssign = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		name: string,
 		getValue: () => string | null | undefined,
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type ClassesSet = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		...classes: string[]
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type ClassesAdd = ClassesSet
 	export type ClassesRemove = ClassesSet
 
 	export type ClassesHas = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		className: string,
-	) => Maoka.Jab<$Element, $Props, boolean | undefined>
+	) => Maoka.Jab<Value, $Props, boolean | undefined>
 
 	export type ClassesAssign = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		getClassName: () => string | null | undefined,
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type ClassesToggle = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		getEnabled: () => boolean,
 		className: string,
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type SetId = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		id: string,
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type AssignId = <
-		$Element extends Element = HTMLElement,
 		$Props extends Maoka.BaseProps = Maoka.NoProps,
 	>(
 		getId: () => string | null | undefined,
-	) => Maoka.Jab<$Element, $Props>
+	) => Maoka.Jab<Value, $Props>
 
 	export type Jabs = {
-		ifInDOM: IfInDom
+		ifInString: IfInString
 		attributes: {
 			get: AttributeGet
 			set: AttributeSet
@@ -104,31 +116,21 @@ export namespace MaokaDom {
 		assignId: AssignId
 	}
 
-	export type IfInDom = <
-		$Element extends Element = HTMLElement,
-		$Props extends Maoka.BaseProps = Maoka.NoProps,
-		$Return = void,
-	>(
-		callback: (params: Maoka.Params<$Element, $Props>) => $Return,
-	) => Maoka.Jab<$Element, $Props, $Return | undefined>
+	export type RenderOptions = {
+		createKey?: () => Maoka.Key
+	}
 }
 
-export type MaokaDomRenderOptions = {
-	createKey?: () => Maoka.Key
-}
+export type MaokaStringRenderOptions = MaokaString.RenderOptions
 
 export const render: (
-	container: Element,
-	component: Maoka.Component<Element>,
-	options?: MaokaDomRenderOptions,
-) => Maoka.Root<Element>
+	component: Maoka.Component<any>,
+	options?: MaokaStringRenderOptions,
+) => string
 
-export const isDomValue: MaokaDom.Guards["isDomValue"]
-export const isDomNode: MaokaDom.Guards["isDomNode"]
+export const isStringValue: MaokaString.Guards["isStringValue"]
+export const isStringNode: MaokaString.Guards["isStringNode"]
 
-declare const maokaDom: {
-	jabs: MaokaDom.Jabs
-	guards: MaokaDom.Guards
-}
+declare const maokaString: MaokaString
 
-export default maokaDom
+export default maokaString
